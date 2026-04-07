@@ -39,3 +39,29 @@ Ingest → chunk → schedule → align (single worker) → merge → Parquet ou
 - `uv run mypy src/ --strict` clean
 
 ---
+
+### Task 1.1: Streaming FASTA parser
+
+**What**: Parse FASTA files as a generator, yielding validated ProteinSequence objects.
+
+**Files**:
+- `src/distributed_alignment/ingest/__init__.py`
+- `src/distributed_alignment/ingest/fasta_parser.py`
+- `tests/test_fasta_parser.py`
+- `tests/fixtures/` — small test FASTA files (valid, empty, malformed)
+
+**Key behaviours**:
+- Generator-based: yields one ProteinSequence at a time, never loads entire file
+- Validates amino acid alphabet (standard 20 + common ambiguity codes B, J, O, U, X, Z)
+- Handles multi-line sequences (FASTA sequences can wrap across lines)
+- Raises clear errors on: empty sequences, invalid characters, malformed headers
+- Logs a warning (doesn't crash) on sequences exceeding a configurable max length
+
+**Tests**:
+- Parse a valid multi-sequence FASTA → correct IDs, sequences, lengths
+- Parse a FASTA with multi-line sequences → correctly concatenated
+- Empty file → yields nothing (no error)
+- Malformed header (no '>') → raises ValueError with line number
+- Invalid amino acid characters → raises ValueError identifying the bad characters
+- Generator behaviour: parsing a 1000-sequence file uses O(1) memory (test via tracemalloc or just assert it yields)
+

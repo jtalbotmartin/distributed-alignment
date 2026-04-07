@@ -59,6 +59,6 @@ def sample_sequences() -> list[dict[str, str | int]]:
             "id": "Q11111",
             "description": "sp|Q11111|PROT3 Test protein 3",
             "sequence": "MNIFEMLRIDEGLRLKIYKDTEGYYTIGIGHLLTKSPSLNAAKSELDKAIGRN",
-            "length": 52,
+            "length": 53,
         },
     ]
