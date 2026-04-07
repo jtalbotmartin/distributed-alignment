@@ -92,3 +92,31 @@ Ingest → chunk → schedule → align (single worker) → merge → Parquet ou
 
 ---
 
+### Task 1.3: Work package scheduler
+
+**What**: Generate work packages from the Cartesian product of query and reference chunk manifests. Implement the filesystem-backed work stack with atomic claims.
+
+**Files**:
+- `src/distributed_alignment/scheduler/__init__.py`
+- `src/distributed_alignment/scheduler/protocols.py` — WorkStack protocol
+- `src/distributed_alignment/scheduler/filesystem_backend.py`
+- `tests/test_work_stack.py`
+
+**Key behaviours**:
+- `generate_work_packages(query_manifest, ref_manifest)` → creates Q×R work package JSON files in `pending/` directory
+- `claim(worker_id)` → atomically moves one package from `pending/` to `running/`, returns WorkPackage or None
+- `complete(package_id, result_path)` → moves from `running/` to `completed/`
+- `fail(package_id, error)` → increments attempt, moves to `pending/` if retries remain, else to `poisoned/`
+- `status()` → returns counts by state
+- Atomic claim via `os.rename()` — if two workers race, exactly one succeeds
+
+**Tests**:
+- Generate packages: 3 query chunks × 2 ref chunks → 6 packages, all PENDING
+- Claim: claim from 6 pending → returns a package, pending count decrements
+- Claim from empty → returns None
+- Complete: package moves to completed, status reflects it
+- Fail with retries remaining → back to pending with incremented attempt
+- Fail with max attempts exhausted → moves to poisoned
+- Concurrent claims (use threading): 10 threads claiming from 5 packages → each package claimed exactly once, no errors
+- Status accuracy: counts match actual directory contents
+

@@ -112,3 +112,30 @@ Each entry follows this structure:
 - PyArrow's type story with mypy strict is still incomplete as of v23. The `ignore_missing_imports` override is the standard workaround and doesn't compromise type safety of our own code.
 
 **Status**: Complete
+
+---
+
+### Task 1.3: Work package scheduler — 2026-04-07
+
+**What was done**:
+- `src/distributed_alignment/scheduler/protocols.py` — `WorkStack` Protocol class defining the interface for work package distribution: `generate_work_packages`, `claim`, `complete`, `fail`, `heartbeat`, `reap_stale`, `pending_count`, `status`.
+- `src/distributed_alignment/scheduler/filesystem_backend.py` — `FileSystemWorkStack` implementation using POSIX `os.rename()` for atomic claims. Directory layout: `pending/`, `running/`, `completed/`, `poisoned/` with one JSON file per work package.
+- Updated `src/distributed_alignment/scheduler/__init__.py` to export both `WorkStack` and `FileSystemWorkStack`.
+- `tests/test_work_stack.py` — 26 tests across 9 test classes covering generation, claiming, completion, failure/retry, heartbeats, stale reaping, status, concurrent claims, and directory initialisation.
+
+**Decisions made**:
+- The `WorkStack` protocol uses `typing.Protocol` rather than an ABC. This is more Pythonic for structural subtyping — any class that implements the right methods satisfies the protocol without explicit inheritance. A future S3 or Redis backend just needs to implement the same methods.
+- `generate_work_packages` is part of the protocol, not a standalone function. This keeps the work package lifecycle (creation through completion) on a single object, and different backends might generate packages differently (e.g. an S3 backend would write to object storage).
+- `claim()` iterates `sorted(pending_dir.iterdir())` for deterministic ordering — without sorting, the iteration order is filesystem-dependent and could cause uneven claim distribution.
+- `fail()` and `reap_stale()` both use the same logic pattern: increment attempt, check against max_attempts, route to PENDING or POISONED. The duplication is minimal and keeps each method self-contained.
+- State transitions are logged as structured audit events with `package_id`, `from_state`, `to_state`, `worker_id`, `attempt`, `reason`, and `timestamp` — matching the TDD's audit event format.
+- The write-then-unlink pattern in `complete()` and `fail()` (write to destination, then delete source) ensures the package JSON always exists in at least one directory. If the process dies between write and unlink, the package exists in both directories — recoverable, not lost.
+
+**Problems encountered**:
+- No significant problems. The atomic rename approach worked cleanly, and the concurrent claims test (10 threads, 5 packages) passed on the first run. POSIX `os.rename()` atomicity is reliable.
+
+**Learnings**:
+- `typing.Protocol` is a clean fit for the "backend interface" pattern. The protocol definition documents the contract (argument types, return types, semantics in docstrings) without imposing inheritance. mypy strict mode verifies that implementations match the protocol at usage sites.
+- The write-then-unlink pattern for state transitions (write new state file, then delete old one) is a simple form of crash safety — the package is never absent from all directories. In a real production system you'd want fsync between the write and unlink, but for this project the pattern is sufficient.
+
+**Status**: Complete
