@@ -65,3 +65,30 @@ Ingest → chunk → schedule → align (single worker) → merge → Parquet ou
 - Invalid amino acid characters → raises ValueError identifying the bad characters
 - Generator behaviour: parsing a 1000-sequence file uses O(1) memory (test via tracemalloc or just assert it yields)
 
+---
+
+### Task 1.2: Deterministic chunker
+
+**What**: Split a stream of ProteinSequence objects into deterministic, hash-based chunks, writing each chunk as Parquet.
+
+**Files**:
+- `src/distributed_alignment/ingest/chunker.py`
+- `tests/test_chunker.py`
+
+**Key behaviours**:
+- Assigns each sequence to a chunk via `hash(sequence_id) % num_chunks`
+- Uses a stable hash (hashlib SHA-256, not Python's built-in hash which is randomised)
+- Writes each chunk as a Parquet file with the schema defined in the TDD
+- Produces a ChunkManifest (JSON) with chunk metadata and content checksums
+- Streaming: accumulates sequences per chunk in memory, flushes to Parquet when all input is consumed (for Phase 1 this is fine; streaming flush can be added later)
+
+**Tests**:
+- Determinism: chunk the same FASTA twice → identical Parquet files (byte-for-byte via checksum)
+- Determinism across ordering: shuffle input order → same chunk assignments
+- Round-trip: chunk → read all Parquet chunks → reassemble → compare against original (zero loss, zero duplication)
+- Chunk count: 100 sequences into 5 chunks → each chunk has ~20 sequences (within reasonable variance)
+- Manifest accuracy: checksums match actual file checksums, sequence counts are correct
+- Edge case: fewer sequences than chunks → some chunks are empty (valid, just no Parquet file)
+
+---
+
