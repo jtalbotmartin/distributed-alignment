@@ -1,0 +1,33 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4f8', 'primaryTextColor': '#1a1a2e', 'primaryBorderColor': '#2b6cb0', 'lineColor': '#4a5568', 'fontSize': '14px'}}}%%
+flowchart LR
+    INPUT["Input FASTA"] --> INGEST
+
+    subgraph PIPELINE["Pipeline Stages"]
+        direction LR
+        INGEST["Ingestion<br/><i>Parse, validate,<br/>chunk</i>"]
+        SCHED["Scheduler<br/><i>Generate<br/>Cartesian product</i>"]
+        WORKERS["Workers ×N<br/><i>DIAMOND blastp<br/>per work package</i>"]
+        MERGE["Merger<br/><i>Join, dedup,<br/>rank via DuckDB</i>"]
+        TAX["Taxonomy<br/>Enrichment<br/><i>NCBI lineage<br/>join</i>"]
+        FEAT["Feature<br/>Extraction<br/><i>Alignment stats +<br/>ESM-2 embeddings</i>"]
+
+        INGEST --> SCHED
+        SCHED --> WORKERS
+        WORKERS --> MERGE
+        MERGE --> TAX
+        TAX --> FEAT
+    end
+
+    FEAT --> CATALOGUE["Data Catalogue<br/><i>DuckDB metadata,<br/>schemas, lineage</i>"]
+    CATALOGUE --> EXPLORER["Results Explorer<br/><i>SQL console,<br/>feature viz,<br/>lineage viewer</i>"]
+
+    style INPUT fill:#fed7d7,stroke:#e53e3e
+    style INGEST fill:#bee3f8,stroke:#2b6cb0
+    style SCHED fill:#bee3f8,stroke:#2b6cb0
+    style WORKERS fill:#c6f6d5,stroke:#38a169
+    style MERGE fill:#bee3f8,stroke:#2b6cb0
+    style TAX fill:#fefcbf,stroke:#d69e2e
+    style FEAT fill:#e9d8fd,stroke:#6b46c1
+    style CATALOGUE fill:#fefcbf,stroke:#d69e2e
+    style EXPLORER fill:#fed7d7,stroke:#e53e3e
+    style PIPELINE fill:#f7fafc,stroke:#a0aec0,stroke-width:1px

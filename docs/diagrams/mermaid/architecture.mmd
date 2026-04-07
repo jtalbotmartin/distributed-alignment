@@ -1,0 +1,51 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4f8', 'primaryTextColor': '#1a1a2e', 'primaryBorderColor': '#2b6cb0', 'lineColor': '#4a5568', 'secondaryColor': '#f0fff4', 'tertiaryColor': '#fffff0', 'fontSize': '14px'}}}%%
+graph TB
+    subgraph INFRA["Infrastructure Layer — Terraform"]
+        direction TB
+        subgraph K8S["Kubernetes Cluster"]
+            direction TB
+            subgraph RAY["Ray Cluster"]
+                HEAD["Ray Head<br/><i>scheduling, object store</i>"]
+                W1["Worker 1<br/>DIAMOND"]
+                W2["Worker 2<br/>DIAMOND"]
+                WN["Worker N<br/>DIAMOND"]
+                HEAD --- W1
+                HEAD --- W2
+                HEAD --- WN
+            end
+            subgraph OBS["Observability Stack"]
+                PROM["Prometheus"]
+                GRAF["Grafana"]
+                PROM --> GRAF
+            end
+            subgraph STORE["Shared Storage — PVC / S3"]
+                CHUNKS["/chunks"]
+                WSTACK["/work_stack"]
+                RESULTS["/results"]
+                FEATURES["/features"]
+                CAT["/catalogue"]
+            end
+            EXPLORER["Results Explorer<br/><i>FastAPI + HTMX</i>"]
+        end
+    end
+
+    W1 -.->|metrics| PROM
+    W2 -.->|metrics| PROM
+    WN -.->|metrics| PROM
+    W1 -->|read/write| STORE
+    W2 -->|read/write| STORE
+    WN -->|read/write| STORE
+    EXPLORER -->|query| CAT
+    EXPLORER -->|query| RESULTS
+    EXPLORER -->|query| FEATURES
+
+    style INFRA fill:#f7fafc,stroke:#2b6cb0,stroke-width:2px
+    style K8S fill:#ebf8ff,stroke:#3182ce,stroke-width:2px
+    style RAY fill:#e8f4f8,stroke:#2b6cb0,stroke-width:1px
+    style OBS fill:#f0fff4,stroke:#38a169,stroke-width:1px
+    style STORE fill:#fffff0,stroke:#d69e2e,stroke-width:1px
+    style HEAD fill:#bee3f8,stroke:#2b6cb0
+    style W1 fill:#c6f6d5,stroke:#38a169
+    style W2 fill:#c6f6d5,stroke:#38a169
+    style WN fill:#c6f6d5,stroke:#38a169
+    style EXPLORER fill:#fed7d7,stroke:#e53e3e

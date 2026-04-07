@@ -7,3 +7,10 @@ Decomposes large-scale alignment problems into independent work packages, distri
 ## Status
 
 🚧 Under active development. See [`docs/task-tracker.md`](docs/task-tracker.md) for progress.
+
+## Documentation
+
+- [User Requirements](docs/01-user-requirements.md)
+- [Technical Design](docs/02-technical-design.md)
+- [Product Requirements](docs/03-product-requirements.md)
+- [Architecture Decision Records](docs/adr/)

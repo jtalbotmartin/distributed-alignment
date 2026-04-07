@@ -1,0 +1,37 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4f8', 'primaryTextColor': '#1a1a2e', 'primaryBorderColor': '#2b6cb0', 'lineColor': '#4a5568', 'fontSize': '14px'}}}%%
+graph TB
+    subgraph APP["Application Code"]
+        CLI["CLI / Pipeline Runner"]
+        WORKER["Worker Logic"]
+        MERGER["Merger"]
+        FEATS["Feature Extraction"]
+    end
+
+    subgraph COMPUTE["Compute Layer — Ray"]
+        RAYH["Ray Head"]
+        RAYW["Ray Workers"]
+        OBJ["Ray Object Store"]
+    end
+
+    subgraph CONTAINER["Container Layer — Kubernetes"]
+        PODS["Pod Scheduling"]
+        HPA["Autoscaling (HPA/KEDA)"]
+        PVC["Storage (PVC)"]
+        SVC["Services & Ingress"]
+    end
+
+    subgraph IaC["Infrastructure — Terraform"]
+        CLUSTER["Cluster Provisioning<br/><i>Kind / EKS</i>"]
+        NETWORK["Networking"]
+        STORAGE["Storage Backends<br/><i>Local / S3</i>"]
+        REGISTRY["Container Registry"]
+    end
+
+    APP -->|"talks to"| COMPUTE
+    COMPUTE -->|"runs on"| CONTAINER
+    CONTAINER -->|"provisioned by"| IaC
+
+    style APP fill:#e9d8fd,stroke:#6b46c1,stroke-width:2px
+    style COMPUTE fill:#c6f6d5,stroke:#38a169,stroke-width:2px
+    style CONTAINER fill:#bee3f8,stroke:#2b6cb0,stroke-width:2px
+    style IaC fill:#fefcbf,stroke:#d69e2e,stroke-width:2px

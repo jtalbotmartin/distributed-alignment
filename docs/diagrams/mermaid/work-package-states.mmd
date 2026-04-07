@@ -1,0 +1,30 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4f8', 'primaryTextColor': '#1a1a2e', 'primaryBorderColor': '#2b6cb0', 'lineColor': '#4a5568', 'fontSize': '14px'}}}%%
+stateDiagram-v2
+    [*] --> PENDING: Work package created
+
+    PENDING --> CLAIMED: Worker claims\n(atomic rename)
+    CLAIMED --> RUNNING: Worker begins\nDIAMOND execution
+    
+    RUNNING --> COMPLETED: Alignment succeeds\nResults written
+    RUNNING --> FAILED: DIAMOND error or\nsubprocess failure
+    RUNNING --> TIMEOUT: Heartbeat stale\n(reaper detects)
+    
+    FAILED --> PENDING: attempt < max_attempts\n(retry with backoff)
+    FAILED --> POISONED: attempt >= max_attempts
+    
+    TIMEOUT --> PENDING: Re-enqueue for\nanother worker
+    
+    COMPLETED --> [*]
+    POISONED --> [*]: Requires manual\ninvestigation
+
+    classDef pending fill:#fefcbf,stroke:#d69e2e,color:#1a1a2e
+    classDef running fill:#bee3f8,stroke:#2b6cb0,color:#1a1a2e
+    classDef success fill:#c6f6d5,stroke:#38a169,color:#1a1a2e
+    classDef failure fill:#fed7d7,stroke:#e53e3e,color:#1a1a2e
+    classDef poison fill:#feb2b2,stroke:#c53030,color:#1a1a2e
+
+    class PENDING pending
+    class CLAIMED,RUNNING running
+    class COMPLETED success
+    class FAILED,TIMEOUT failure
+    class POISONED poison

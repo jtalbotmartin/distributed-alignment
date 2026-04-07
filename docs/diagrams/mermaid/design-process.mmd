@@ -1,0 +1,27 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#e8f4f8', 'primaryTextColor': '#1a1a2e', 'primaryBorderColor': '#2b6cb0', 'lineColor': '#4a5568', 'fontSize': '14px'}}}%%
+flowchart TD
+    URD["User Requirements (URD)<br/><i>What the system needs to do and why</i>"]
+    PRD["Product Requirements (PRD)<br/><i>Scope, success criteria, user journeys</i>"]
+    TDD["Technical Design (TDD)<br/><i>Architecture, components, data contracts</i>"]
+    ADR["Architecture Decision Records<br/><i>Rationale for each major choice</i>"]
+    IMPL["Implementation Phases<br/><i>Ordered delivery with clear milestones</i>"]
+    TEST["Testing Strategy<br/><i>Verification of correctness and resilience</i>"]
+    CICD["CI/CD Pipeline<br/><i>Continuous quality assurance</i>"]
+    DOCS["Documentation & Demo<br/><i>Making the work accessible</i>"]
+
+    URD --> PRD
+    PRD --> TDD
+    TDD --> ADR
+    TDD --> IMPL
+    IMPL --> TEST
+    TEST --> CICD
+    CICD --> DOCS
+
+    style URD fill:#bee3f8,stroke:#2b6cb0
+    style PRD fill:#bee3f8,stroke:#2b6cb0
+    style TDD fill:#c6f6d5,stroke:#38a169
+    style ADR fill:#e9d8fd,stroke:#6b46c1
+    style IMPL fill:#fefcbf,stroke:#d69e2e
+    style TEST fill:#fed7d7,stroke:#e53e3e
+    style CICD fill:#fed7d7,stroke:#e53e3e
+    style DOCS fill:#fefcbf,stroke:#d69e2e
