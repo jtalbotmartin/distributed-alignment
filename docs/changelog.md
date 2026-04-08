@@ -139,3 +139,40 @@ Each entry follows this structure:
 - The write-then-unlink pattern for state transitions (write new state file, then delete old one) is a simple form of crash safety — the package is never absent from all directories. In a real production system you'd want fsync between the write and unlink, but for this project the pattern is sufficient.
 
 **Status**: Complete
+
+---
+
+### Task 1.4: DIAMOND wrapper and worker — 2026-04-07
+
+**What was done**:
+- `src/distributed_alignment/worker/diamond_wrapper.py` — `DiamondWrapper` class wrapping the DIAMOND binary: `check_available()`, `make_db()`, `run_blastp()`, plus standalone `parse_output()` for parsing format 6 TSV into PyArrow Tables. `DiamondResult` dataclass for structured return values.
+- `src/distributed_alignment/worker/runner.py` — `WorkerRunner` class implementing the main worker loop: claim → convert Parquet to FASTA → build reference DB → run DIAMOND blastp → parse output → write result Parquet → mark complete → repeat. Includes `parquet_chunk_to_fasta()` helper for the Parquet → FASTA conversion.
+- Updated `src/distributed_alignment/worker/__init__.py` to export all public APIs.
+- `scripts/generate_test_data.py` — generates synthetic protein FASTA files (no network access required). Deterministic via seed parameter.
+- `tests/fixtures/diamond_output.tsv` — realistic DIAMOND format 6 output for unit testing `parse_output()`.
+- `tests/test_diamond_wrapper.py` — 12 unit tests (parse output, availability checking, result dataclass, error handling) + 4 integration tests (marked `@pytest.mark.integration`).
+- `tests/test_worker.py` — 9 unit tests (Parquet→FASTA conversion, worker loop with mocked DIAMOND, failure/retry, missing chunks) + 1 integration test.
+
+**Decisions made**:
+- `DiamondWrapper` is a dataclass rather than a plain class — `binary`, `threads`, `extra_args` are configuration state, not behaviour, so dataclass makes the intent clear and gives us `__init__`/`__repr__` for free.
+- Exit codes use sentinel values: -1 for timeout (`subprocess.TimeoutExpired`), -2 for binary not found (`FileNotFoundError`). These are not real DIAMOND exit codes and won't collide with DIAMOND's own codes.
+- `parse_output()` is a standalone function rather than a method on `DiamondWrapper`. It has no dependency on the wrapper's state (binary path, threads) and is useful independently for testing and data inspection.
+- `WorkerRunner` generates its own `worker_id` via `uuid.uuid4()` hex prefix. This is simpler than requiring the caller to provide one and ensures uniqueness in multi-worker scenarios.
+- The worker loop runs to exhaustion — it keeps claiming packages until `claim()` returns None. This means persistent failures exhaust all retries and eventually poison the package, which is the correct behaviour for a single-worker loop. In multi-worker scenarios, different workers would claim different packages.
+- Temp working directory (`.tmp_{package_id}`) is created per package and cleaned up via `shutil.rmtree` in a `finally` block. This prevents accumulating temp files on failure.
+
+**Problems encountered**:
+- Initial test failures on the "diamond failure calls fail" tests: the worker loop kept reclaiming the same failed package until retries were exhausted (POISONED), so the assertion `status["PENDING"] == 1` after one failure was wrong. Fixed by updating tests to verify the final state (POISONED) since the worker correctly drains all retries of a persistently failing package.
+- This revealed an important insight about testing the worker: you can't test "one failure" in isolation when the worker loop is autonomous — it will keep going. To test a single retry, you'd need to mock the work stack to return None after the first reclaim.
+
+**Learnings**:
+- The separation between `DiamondWrapper` (subprocess management) and `WorkerRunner` (orchestration logic) makes unit testing much cleaner. Mocking the wrapper with `MagicMock(spec=DiamondWrapper)` lets you test all the worker's claim/fail/complete logic without needing the DIAMOND binary.
+- When testing loop-based workers, be careful about what "failure" means: a single DIAMOND failure doesn't mean the worker stops — it means the package gets retried. Tests need to match the actual loop semantics.
+- Synthetic test data generation (deterministic via seed) is much more reliable for CI than downloading real data. The `generate_test_data.py` script produces valid protein sequences that DIAMOND can align.
+
+**Status**: Complete
+
+---
+
+
+**Status**: Complete
