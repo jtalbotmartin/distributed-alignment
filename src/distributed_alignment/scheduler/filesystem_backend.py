@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
     from distributed_alignment.models import ChunkManifest
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(component="scheduler")
 
 # Directories for each work package state
 STATE_DIRS: dict[WorkPackageState, str] = {

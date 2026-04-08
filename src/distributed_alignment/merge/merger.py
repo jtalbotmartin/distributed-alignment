@@ -17,7 +17,7 @@ import structlog
 if TYPE_CHECKING:
     from pathlib import Path
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(component="merger")
 
 # Column name mapping: DIAMOND format 6 → MergedHit model
 _DIAMOND_TO_MERGED: dict[str, str] = {

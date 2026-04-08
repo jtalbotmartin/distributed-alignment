@@ -238,3 +238,35 @@ Each entry follows this structure:
 - Testing mergers with synthetic Parquet fixtures (known evalues, known query-subject pairs) is much more effective than testing with real DIAMOND output where you can't easily predict exact values.
 
 **Status**: Complete
+
+---
+
+### Task 1.6: Structured logging setup — 2026-04-08
+
+**What was done**:
+- `src/distributed_alignment/observability/logging.py` — `configure_logging()` function that sets up structlog with JSON or console output, binds `run_id` globally via contextvars, integrates with stdlib logging, and is idempotent (safe to call multiple times).
+- Updated `src/distributed_alignment/observability/__init__.py` to export `configure_logging`.
+- Updated all six existing modules to bind a `component` to their loggers:
+  - `fasta_parser.py` → `component="ingest"`
+  - `chunker.py` → `component="chunker"`
+  - `filesystem_backend.py` → `component="scheduler"`
+  - `diamond_wrapper.py` → `component="diamond"`
+  - `runner.py` → `component="worker"`
+  - `merger.py` → `component="merger"`
+- `tests/test_logging.py` — 13 tests across 5 classes: JSON output format, run_id correlation, bound context, log level filtering, and idempotency.
+
+**Decisions made**:
+- Used `structlog.contextvars` for `run_id` binding rather than module-level `bind()`. Contextvars propagate across all loggers in the same thread/async context without requiring each module to explicitly bind the run_id. Calling `configure_logging(run_id=...)` once at startup makes the run_id appear in every log entry from every module.
+- JSON output auto-detected via `sys.stdout.isatty()` — JSON for production/CI (stdout not a TTY), coloured console for interactive development. Can be overridden explicitly with the `json_output` parameter.
+- Integrated structlog with stdlib logging via `ProcessorFormatter`. This means third-party library logs (DuckDB, PyArrow) also flow through structlog's formatting pipeline and include the same timestamp format and JSON structure.
+- `cache_logger_on_first_use=False` ensures that reconfiguring logging (e.g. changing run_id) takes effect immediately on existing logger instances.
+- Component binding uses `structlog.get_logger(component="name")` at module level. This is bound at logger creation time, so every log call from that module automatically includes the component field.
+
+**Problems encountered**:
+- structlog's `add_log_level` processor adds a key named `"level"`, not `"log_level"`. Initial tests expected `"log_level"` based on the structlog docs mentioning "log_level" in some contexts, but the actual JSON output uses `"level"`.
+
+**Learnings**:
+- structlog's `contextvars` integration is the cleanest way to add cross-cutting context (like `run_id`) that should appear in every log entry without passing it through function arguments. It works like thread-local storage but is async-safe.
+- Testing logging configuration by redirecting handler streams to `StringIO` is more reliable than capturing stderr — it gives direct access to the formatted output for JSON parsing.
+
+**Status**: Complete

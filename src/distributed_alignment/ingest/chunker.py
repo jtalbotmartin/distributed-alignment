@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
     from distributed_alignment.models import ProteinSequence
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(component="chunker")
 
 # Parquet schema for chunk files — matches TDD section 3.1
 CHUNK_SCHEMA = pa.schema(

@@ -19,7 +19,7 @@ import structlog
 if TYPE_CHECKING:
     from pathlib import Path
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(component="diamond")
 
 # DIAMOND format 6 column names and PyArrow types
 DIAMOND_COLUMNS: list[tuple[str, pa.DataType]] = [

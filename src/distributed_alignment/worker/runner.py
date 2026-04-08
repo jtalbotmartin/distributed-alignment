@@ -25,7 +25,7 @@ if TYPE_CHECKING:
         FileSystemWorkStack,
     )
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(component="worker")
 
 
 def parquet_chunk_to_fasta(parquet_path: Path, fasta_path: Path) -> int:

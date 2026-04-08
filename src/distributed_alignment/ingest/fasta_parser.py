@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 from distributed_alignment.models import ProteinSequence
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(component="ingest")
 
 # Default maximum sequence length before a warning is logged
 DEFAULT_MAX_LENGTH = 100_000

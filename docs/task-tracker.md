@@ -181,3 +181,24 @@ Ingest → chunk → schedule → align (single worker) → merge → Parquet ou
 - Empty results: a query chunk with no hits across any ref chunk → valid empty Parquet (correct schema, zero rows)
 
 ---
+
+### Task 1.6: Structured logging setup
+
+**What**: Configure structlog for JSON logging with correlation IDs.
+
+**Files**:
+- `src/distributed_alignment/observability/__init__.py`
+- `src/distributed_alignment/observability/logging.py`
+- Update existing modules to use structured logging
+
+**Key behaviours**:
+- `configure_logging(level, run_id)` → sets up structlog with JSON output, bound with run_id
+- Every module uses `structlog.get_logger()` and binds component-specific context (worker_id, package_id, etc.)
+- Log levels: DEBUG for detailed tracing, INFO for pipeline events, WARNING for recoverable issues, ERROR for failures
+
+**Tests**:
+- Logging configuration produces JSON output
+- Bound context (run_id, package_id) appears in log entries
+- Different components produce logs with correct component field
+
+---
