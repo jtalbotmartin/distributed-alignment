@@ -156,3 +156,28 @@ Ingest → chunk → schedule → align (single worker) → merge → Parquet ou
 **Note**: Tests that actually run DIAMOND require the binary to be installed. Mark these with `@pytest.mark.integration` so they can be skipped in CI initially.
 
 ---
+
+### Task 1.5: Result merger
+
+**What**: Merge alignment results across reference chunks for each query chunk, dedup and rank.
+
+**Files**:
+- `src/distributed_alignment/merge/__init__.py`
+- `src/distributed_alignment/merge/merger.py`
+- `tests/test_merger.py`
+
+**Key behaviours**:
+- `merge_query_chunk(query_chunk_id, results_dir, output_dir, top_n)` → reads all result Parquet files for the query chunk, deduplicates, ranks globally, writes merged Parquet
+- Uses DuckDB for the merge (SQL with ROW_NUMBER window function)
+- Validates output schema before writing
+- Detects incomplete merges (not all reference chunks have results yet) and raises rather than producing partial output
+
+**Tests**:
+- Merge 3 result files for one query chunk → correct global ranking by evalue
+- Deduplication: same query-subject pair appears in multiple ref chunks → kept once (best score)
+- Top-N: with top_n=5, no query has more than 5 hits in output
+- Schema validation: output has all expected columns with correct types
+- Incomplete merge: 2 of 3 expected result files present → raises with clear message
+- Empty results: a query chunk with no hits across any ref chunk → valid empty Parquet (correct schema, zero rows)
+
+---

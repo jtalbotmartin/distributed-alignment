@@ -2,8 +2,10 @@
 # Not the production Dockerfile (Phase 4) — just enough for pytest -m integration.
 #
 # Usage via docker-compose:
-#   docker-compose run dev pytest tests/ -v
-#   docker-compose run dev pytest tests/ -m integration
+#   docker-compose run dev uv run pytest tests/ -v
+#   docker-compose run dev uv run pytest tests/ -m integration
+#
+# Works on both x86_64 and arm64 (Apple Silicon) via conda-forge.
 
 FROM python:3.11-slim
 
@@ -12,11 +14,18 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Install DIAMOND (pinned version for reproducibility)
+# Install DIAMOND via miniforge + bioconda.
+# Miniforge uses conda-forge by default (no Anaconda ToS).
+# Supports both x86_64 and arm64 natively.
 ARG DIAMOND_VERSION=2.1.10
-RUN curl -fsSL "https://github.com/bbuchfink/diamond/releases/download/v${DIAMOND_VERSION}/diamond-linux64.tar.gz" \
-    | tar -xz -C /usr/local/bin && \
-    chmod +x /usr/local/bin/diamond && \
+RUN ARCH=$(uname -m) && \
+    curl -fsSL "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh" \
+        -o /tmp/miniforge.sh && \
+    bash /tmp/miniforge.sh -b -p /opt/conda && \
+    rm /tmp/miniforge.sh && \
+    /opt/conda/bin/conda install -y -c conda-forge -c bioconda "diamond=${DIAMOND_VERSION}" && \
+    /opt/conda/bin/conda clean -afy && \
+    ln -s /opt/conda/bin/diamond /usr/local/bin/diamond && \
     diamond version
 
 # Install uv

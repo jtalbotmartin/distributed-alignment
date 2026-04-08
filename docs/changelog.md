@@ -177,8 +177,8 @@ Each entry follows this structure:
 ### Dev container and Swiss-Prot test data — 2026-04-08
 
 **What was done**:
-- `Dockerfile.dev` — minimal dev container: `python:3.11-slim` base, DIAMOND v2.1.10 binary (pinned, downloaded from GitHub releases), uv for Python dependency management. Not the full Phase 4 production container — just enough for `pytest -m integration`.
-- `docker-compose.yml` — single `dev` service that mounts the project directory as a volume. Usage: `docker-compose run dev uv run pytest tests/ -m integration -v`.
+- `Dockerfile.dev` — minimal dev container: `python:3.11-slim` base, DIAMOND v2.1.10 via miniforge/bioconda (works on both x86_64 and arm64), uv for Python dependency management. Not the full Phase 4 production container — just enough for `pytest -m integration`.
+- `docker-compose.yml` — single `dev` service with code baked into image. Usage: `docker-compose run dev uv run pytest tests/ -v`.
 - `.dockerignore` — excludes `.venv`, `.git`, caches, and working directories from the Docker build context.
 - `tests/fixtures/swissprot_queries.fasta` — 100 reviewed human proteins from UniProt Swiss-Prot (~84KB).
 - `tests/fixtures/swissprot_reference.fasta` — 500 reviewed E. coli K-12 proteins from UniProt Swiss-Prot (~243KB).
@@ -190,14 +190,17 @@ Each entry follows this structure:
 
 **Decisions made**:
 - Pulled a minimal Dockerfile forward from Phase 4 to solve the immediate DIAMOND reproducibility problem. This is deliberately not the full production container (no Ray, no Prometheus, no Grafana) — just DIAMOND + Python + uv.
-- DIAMOND version pinned at v2.1.10 in the Dockerfile for reproducibility. The binary is downloaded directly from GitHub releases rather than using a package manager inside the container.
+- DIAMOND installed via miniforge + bioconda rather than direct binary download. This handles cross-platform (x86_64/arm64) natively, avoiding Rosetta emulation issues on Apple Silicon. Miniforge avoids Anaconda's ToS requirements that block miniconda in non-interactive Docker builds.
+- Volume mounts removed from docker-compose.yml — the iCloud Drive path (`Mobile Documents/com~apple~CloudDocs/`) causes `Resource deadlock` errors (os error 35) with Docker volume mounts. Code is baked into the image instead; rebuild with `docker-compose build dev` after changes.
 - Swiss-Prot fixture data is committed to the repo (~327KB total). This removes network dependency from tests — the fixtures are always available. The download script (`scripts/download_test_data.sh`) is for refreshing them.
 - Chose human (queries) vs E. coli K-12 (reference) because they're distant enough to test alignment sensitivity but share enough conserved proteins (ribosomal proteins, chaperones, metabolic enzymes) to produce meaningful hits.
 - The `integration_test_data` fixture uses `shutil.copy` to a tmp_path so each test gets its own clean copy, and the committed fixtures are never modified.
 
 **Problems encountered**:
 - UniProt REST API's `size` parameter doesn't limit total results — it controls page size. Had to download all sequences and trim to the desired count with a Python script.
-- Docker daemon wasn't running during development, so the Dockerfile couldn't be tested via `docker-compose build`. The Dockerfile follows standard patterns and will work when Docker is available.
+- DIAMOND's GitHub releases only provide `diamond-linux64` (x86_64). On Apple Silicon running Docker, this fails with `rosetta error: failed to open elf at /lib64/ld-linux-x86-64.so.2`. Switched from direct binary download to miniforge + bioconda, which provides native arm64 builds.
+- Miniconda now requires accepting Anaconda Terms of Service, which fails in non-interactive Docker builds (`CondaToSNonInteractiveError`). Miniforge is the community-maintained alternative with conda-forge as default channel and no ToS requirement.
+- Docker volume mounts from iCloud Drive paths cause `Resource deadlock would occur (os error 35)`. Removed the volume mount from docker-compose.yml; code is baked into the image instead.
 
 **Learnings**:
 - Real test data catches things synthetic data doesn't. The `test_blastp_produces_hits_with_real_data` test verifies biological correctness (e-value < 1e-5 between human and E. coli), not just schema correctness. Synthetic random sequences may not produce any hits at all.

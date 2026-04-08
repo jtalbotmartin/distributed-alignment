@@ -22,15 +22,15 @@ No local dependencies needed beyond Docker:
 # Build the dev container (includes DIAMOND + Python deps)
 docker-compose build dev
 
-# Run all unit tests
+# Run all tests (unit + integration, DIAMOND included)
 docker-compose run dev uv run pytest tests/ -v
 
-# Run integration tests (requires DIAMOND — included in container)
+# Run only integration tests
 docker-compose run dev uv run pytest tests/ -m integration -v
-
-# Run everything
-docker-compose run dev uv run pytest tests/ -v --run-integration
 ```
+
+Code is baked into the image at build time. After editing source files,
+rebuild with `docker-compose build dev` to pick up changes.
 
 ### Running tests (local)
 
