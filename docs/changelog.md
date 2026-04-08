@@ -302,3 +302,20 @@ Each entry follows this structure:
 - No `--resume` support for the `run` command — if interrupted, you currently need to clear the work_stack and re-run. Phase 2 should detect existing work packages and resume.
 
 **Status**: Complete — Phase 1 MVP is done.
+
+---
+
+### Post-Phase 1 cleanup — 2026-04-08
+
+**What was done**:
+- **Ref DB caching**: `WorkerRunner` now caches built `.dmnd` files in `ref_dbs/` directory. Multiple query chunks aligning against the same reference chunk reuse the cached database instead of rebuilding. With 10 query × 2 ref chunks, this cuts `makedb` calls from 20 to 2. Cache hit/miss logged via structlog.
+- **Removed dead code**: `_read_package()` method in `FileSystemWorkStack` was defined but never called — all callers read JSON directly. Removed.
+- **Fixed `explore` exit code**: Changed from `raise typer.Exit(code=1)` to printing a "not yet implemented" message and exiting cleanly (code 0).
+- **Added CLI unit tests**: 14 new tests in `tests/test_cli.py` using `typer.testing.CliRunner` — covers help output for all subcommands, ingest with valid/invalid args, status with/without data, run validation (missing manifests, workers warning), and explore stub.
+- **Fixed pytest `pythonpath`**: Added `pythonpath = ["src"]` to `[tool.pytest.ini_options]` in `pyproject.toml`. This ensures `pytest` can import the package regardless of whether the editable install's `.pth` file is working — permanently fixes the iCloud path issue for tests.
+
+**Decisions made**:
+- Ref DB cache uses the simple pattern: check if `ref_dbs/{ref_chunk_id}.dmnd` exists, skip `makedb` if so. This is safe because chunk content is deterministic (same chunk ID = same sequences, verified by content checksums in the manifest). No cache invalidation needed within a single pipeline run.
+- CLI tests use `typer.testing.CliRunner` which invokes the app in-process — no subprocess overhead, no DIAMOND dependency for most tests. Only the `run` command needs DIAMOND, and validation tests (missing manifests, workers warning) stop before reaching DIAMOND.
+
+**Status**: Complete

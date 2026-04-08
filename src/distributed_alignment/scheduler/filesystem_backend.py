@@ -62,14 +62,6 @@ class FileSystemWorkStack:
         """Return the file path for a package in a given state directory."""
         return self._dir_for(state) / f"{package_id}.json"
 
-    def _read_package(
-        self, package_id: str, state: WorkPackageState
-    ) -> WorkPackage:
-        """Read and parse a work package JSON file."""
-        path = self._package_path(package_id, state)
-        data = json.loads(path.read_text())
-        return WorkPackage(**data)
-
     def _write_package(self, package: WorkPackage) -> None:
         """Write a work package to its state directory."""
         path = self._package_path(package.package_id, package.state)

@@ -322,11 +322,10 @@ def explore(
     ] = None,
 ) -> None:
     """Launch the interactive results explorer."""
-    typer.echo(f"Starting explorer on port {port}")
-    if data_dir:
-        typer.echo(f"Data directory: {data_dir}")
-    typer.echo("Not yet implemented — see Phase 4")
-    raise typer.Exit(code=1)
+    typer.echo(
+        "Results explorer is not yet implemented — coming in Phase 4.",
+        err=True,
+    )
 
 
 if __name__ == "__main__":

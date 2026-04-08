@@ -92,6 +92,12 @@ class WorkerRunner:
 
         self._results_dir.mkdir(parents=True, exist_ok=True)
 
+        # Cache directory for reference databases — avoids rebuilding
+        # the same .dmnd file when multiple query chunks align against
+        # the same reference chunk.
+        self._ref_db_cache = self._results_dir.parent / "ref_dbs"
+        self._ref_db_cache.mkdir(parents=True, exist_ok=True)
+
     @property
     def worker_id(self) -> str:
         """Return this worker's unique identifier."""
@@ -165,7 +171,8 @@ class WorkerRunner:
         """Execute the alignment for a work package.
 
         Converts Parquet chunks to FASTA, builds the reference DB if
-        needed, runs DIAMOND blastp, and writes results as Parquet.
+        not already cached, runs DIAMOND blastp, and writes results as
+        Parquet.
 
         Args:
             package: The work package to process.
@@ -173,8 +180,6 @@ class WorkerRunner:
         Returns:
             Path to the result Parquet file, or None on failure.
         """
-        from pathlib import Path as _Path
-
         # Locate chunk Parquet files
         query_parquet = self._find_chunk_parquet(package.query_chunk_id)
         ref_parquet = self._find_chunk_parquet(package.ref_chunk_id)
@@ -192,20 +197,16 @@ class WorkerRunner:
         work_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            # Convert Parquet → FASTA for DIAMOND
+            # Convert query Parquet → FASTA
             query_fasta = work_dir / "query.fasta"
-            ref_fasta = work_dir / "ref.fasta"
             parquet_chunk_to_fasta(query_parquet, query_fasta)
-            parquet_chunk_to_fasta(ref_parquet, ref_fasta)
 
-            # Build reference DB
-            ref_db = work_dir / "ref"
-            db_result = self._diamond.make_db(ref_fasta, ref_db)
-            if db_result.exit_code != 0:
-                error = (
-                    db_result.error_message
-                    or f"makedb failed: exit {db_result.exit_code}"
-                )
+            # Build or reuse cached reference DB
+            ref_db_path = self._get_or_build_ref_db(
+                package.ref_chunk_id, ref_parquet, work_dir
+            )
+            if ref_db_path is None:
+                error = f"Failed to build reference DB for {package.ref_chunk_id}"
                 self._work_stack.fail(package.package_id, error)
                 return None
 
@@ -213,7 +214,7 @@ class WorkerRunner:
             raw_output = work_dir / "output.tsv"
             blast_result = self._diamond.run_blastp(
                 query_fasta,
-                _Path(f"{ref_db}.dmnd"),
+                ref_db_path,
                 raw_output,
                 sensitivity=self._sensitivity,
                 max_target_seqs=self._max_target_seqs,
@@ -243,6 +244,59 @@ class WorkerRunner:
             import shutil
 
             shutil.rmtree(work_dir, ignore_errors=True)
+
+    def _get_or_build_ref_db(
+        self,
+        ref_chunk_id: str,
+        ref_parquet: Path,
+        work_dir: Path,
+    ) -> Path | None:
+        """Return path to a cached .dmnd file, building it if needed.
+
+        Reference databases are cached in ``ref_dbs/`` so that multiple
+        query chunks aligning against the same reference chunk reuse the
+        same .dmnd file instead of rebuilding it each time.
+
+        Args:
+            ref_chunk_id: Reference chunk identifier.
+            ref_parquet: Path to the reference chunk Parquet file.
+            work_dir: Temp directory for intermediate files.
+
+        Returns:
+            Path to the .dmnd file, or None on build failure.
+        """
+        cached_db = self._ref_db_cache / f"{ref_chunk_id}.dmnd"
+
+        if cached_db.exists():
+            logger.debug(
+                "ref_db_cache_hit",
+                ref_chunk_id=ref_chunk_id,
+                path=str(cached_db),
+            )
+            return cached_db
+
+        # Cache miss — build the database
+        logger.info(
+            "ref_db_cache_miss",
+            ref_chunk_id=ref_chunk_id,
+        )
+
+        ref_fasta = work_dir / "ref.fasta"
+        parquet_chunk_to_fasta(ref_parquet, ref_fasta)
+
+        # Build into cache directory (without .dmnd extension — DIAMOND adds it)
+        db_stem = self._ref_db_cache / ref_chunk_id
+        db_result = self._diamond.make_db(ref_fasta, db_stem)
+
+        if db_result.exit_code != 0:
+            logger.error(
+                "ref_db_build_failed",
+                ref_chunk_id=ref_chunk_id,
+                error=db_result.error_message,
+            )
+            return None
+
+        return cached_db
 
     def _find_chunk_parquet(self, chunk_id: str) -> Path | None:
         """Find a chunk Parquet file by chunk ID.
