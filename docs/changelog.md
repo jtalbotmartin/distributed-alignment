@@ -206,5 +206,35 @@ Each entry follows this structure:
 - Real test data catches things synthetic data doesn't. The `test_blastp_produces_hits_with_real_data` test verifies biological correctness (e-value < 1e-5 between human and E. coli), not just schema correctness. Synthetic random sequences may not produce any hits at all.
 - Committing small fixture files (~300KB) to the repo is the right trade-off for test reproducibility. It eliminates network dependencies and makes CI deterministic.
 - The dev Dockerfile pattern (minimal, pinned deps, single purpose) is a good intermediate step before the full production container. It solves the immediate problem without scope-creeping into Phase 4 infrastructure.
+- For Docker on macOS with iCloud Drive projects: don't use volume mounts. Bake code into the image and rebuild on changes. The trade-off (rebuild vs live reload) is worth it for avoiding filesystem compatibility issues.
+- Miniforge is the right choice for bioinformatics Docker images over miniconda — same functionality, no ToS friction, conda-forge as default channel.
+
+**Status**: Complete
+
+---
+
+### Task 1.5: Result merger — 2026-04-08
+
+**What was done**:
+- `src/distributed_alignment/merge/merger.py` — `merge_query_chunk()` function that reads per-ref-chunk result Parquet files, renames DIAMOND columns to MergedHit model names, deduplicates (best evalue per query-subject pair), applies global top-N ranking per query, validates the output schema, and writes merged Parquet. Uses DuckDB for all SQL operations.
+- `MERGED_SCHEMA` exported as a PyArrow schema constant matching the MergedHit model.
+- Updated `src/distributed_alignment/merge/__init__.py` to export `merge_query_chunk` and `MERGED_SCHEMA`.
+- `tests/test_merger.py` — 14 tests across 7 test classes: global ranking, tiebreaking, deduplication, top-N filtering, schema validation, incomplete merge detection, empty results, and return value. All tests use synthetic Parquet fixtures — no DIAMOND required.
+
+**Decisions made**:
+- **Column name normalisation**: The worker writes DIAMOND's native column names (`qseqid`, `sseqid`, `pident`, `length`, `mismatch`, `gapopen`, ...) while the MergedHit model uses descriptive names (`query_id`, `subject_id`, `percent_identity`, `alignment_length`, `mismatches`, `gap_opens`, ...). The merger renames via DuckDB `AS` clauses in the SQL. This keeps the worker simple (raw DIAMOND output) and puts the normalisation at the boundary where it belongs.
+- **Two-step dedup then rank**: First `ROW_NUMBER() OVER (PARTITION BY query_id, subject_id ORDER BY evalue ASC, bitscore DESC)` to deduplicate, then a second `ROW_NUMBER() OVER (PARTITION BY query_id ORDER BY evalue ASC, bitscore DESC)` for global ranking. This ensures dedup happens before top-N filtering — otherwise a duplicate could consume a top-N slot.
+- **Completeness check before merge**: The `expected_ref_chunks` parameter lists which ref chunks should have results. If any are missing, the function raises with a clear error listing the missing chunks. This prevents silently producing partial results.
+- **Empty results are valid**: If all result files exist but contain zero rows, the output is a valid empty Parquet file with the correct schema. This is correct behaviour — it means no alignments were found, which is a legitimate result.
+- Added `query_chunk_id` and `ref_chunk_id` columns to the merged output as string literals injected in the DuckDB SQL. These enable tracing any hit back to its source work package.
+
+**Problems encountered**:
+- DuckDB's `fetch_arrow_table()` is deprecated in v1.5; replacement is `.arrow()` which returns a `RecordBatchReader`, not a `Table`. Needed `.arrow().read_all()` to get a PyArrow Table that can be passed to `pq.write_table()`. Initial attempt with just `.arrow()` caused `TypeError: expected pyarrow.lib.Table, got pyarrow.lib.RecordBatchReader`.
+- The `CAST(global_rank AS INTEGER)` in the SQL was necessary because DuckDB's `ROW_NUMBER()` returns `BIGINT` by default, but the MERGED_SCHEMA expects `int32`. The explicit cast in SQL plus `arrow_table.cast(MERGED_SCHEMA)` at the PyArrow level ensures type consistency.
+
+**Learnings**:
+- DuckDB's ability to `read_parquet()` directly in SQL and return Arrow tables makes it an excellent fit for this kind of merge operation — no intermediate pandas DataFrames, no serialisation overhead.
+- Column name normalisation at stage boundaries (DIAMOND names → model names) is a form of data contract enforcement. It's better to do this explicitly at the boundary than to let DIAMOND's naming conventions leak through the rest of the pipeline.
+- Testing mergers with synthetic Parquet fixtures (known evalues, known query-subject pairs) is much more effective than testing with real DIAMOND output where you can't easily predict exact values.
 
 **Status**: Complete
