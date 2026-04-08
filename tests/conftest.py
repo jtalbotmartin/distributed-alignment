@@ -1,8 +1,17 @@
 """Shared test fixtures for distributed-alignment."""
 
+from __future__ import annotations
+
+import shutil
 from pathlib import Path
 
 import pytest
+
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+# Swiss-Prot fixture paths (committed to repo)
+SWISSPROT_QUERIES = FIXTURES_DIR / "swissprot_queries.fasta"
+SWISSPROT_REFERENCE = FIXTURES_DIR / "swissprot_reference.fasta"
 
 
 @pytest.fixture
@@ -62,3 +71,42 @@ def sample_sequences() -> list[dict[str, str | int]]:
             "length": 53,
         },
     ]
+
+
+@pytest.fixture
+def integration_test_data(
+    tmp_path: Path,
+) -> tuple[Path, Path]:
+    """Provide query and reference FASTA files for integration tests.
+
+    Uses committed Swiss-Prot fixtures when available (real protein
+    sequences — produces meaningful DIAMOND hits). Falls back to
+    synthetic data if fixtures are missing.
+    """
+    queries = tmp_path / "queries.fasta"
+    reference = tmp_path / "reference.fasta"
+
+    if SWISSPROT_QUERIES.exists() and SWISSPROT_REFERENCE.exists():
+        shutil.copy(SWISSPROT_QUERIES, queries)
+        shutil.copy(SWISSPROT_REFERENCE, reference)
+    else:
+        from scripts.generate_test_data import generate_fasta
+
+        generate_fasta(
+            queries,
+            num_sequences=10,
+            prefix="query",
+            min_length=50,
+            max_length=100,
+            seed=42,
+        )
+        generate_fasta(
+            reference,
+            num_sequences=50,
+            prefix="ref",
+            min_length=50,
+            max_length=100,
+            seed=123,
+        )
+
+    return queries, reference

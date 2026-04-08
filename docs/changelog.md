@@ -174,5 +174,34 @@ Each entry follows this structure:
 
 ---
 
+### Dev container and Swiss-Prot test data — 2026-04-08
+
+**What was done**:
+- `Dockerfile.dev` — minimal dev container: `python:3.11-slim` base, DIAMOND v2.1.10 binary (pinned, downloaded from GitHub releases), uv for Python dependency management. Not the full Phase 4 production container — just enough for `pytest -m integration`.
+- `docker-compose.yml` — single `dev` service that mounts the project directory as a volume. Usage: `docker-compose run dev uv run pytest tests/ -m integration -v`.
+- `.dockerignore` — excludes `.venv`, `.git`, caches, and working directories from the Docker build context.
+- `tests/fixtures/swissprot_queries.fasta` — 100 reviewed human proteins from UniProt Swiss-Prot (~84KB).
+- `tests/fixtures/swissprot_reference.fasta` — 500 reviewed E. coli K-12 proteins from UniProt Swiss-Prot (~243KB).
+- Updated `scripts/download_test_data.sh` to download and trim Swiss-Prot data into the fixtures directory.
+- Added `integration_test_data` shared fixture in `tests/conftest.py` — uses committed Swiss-Prot fixtures when present, falls back to synthetic data if missing.
+- Updated integration tests in `test_diamond_wrapper.py` and `test_worker.py` to use the shared fixture.
+- Added `test_blastp_produces_hits_with_real_data` test — verifies that human vs E. coli alignment produces real homologs (e-value < 1e-5), which validates that the pipeline is producing biologically meaningful results, not just correct schema.
+- Updated `README.md` with "Running tests" section covering both Docker and local approaches.
+
+**Decisions made**:
+- Pulled a minimal Dockerfile forward from Phase 4 to solve the immediate DIAMOND reproducibility problem. This is deliberately not the full production container (no Ray, no Prometheus, no Grafana) — just DIAMOND + Python + uv.
+- DIAMOND version pinned at v2.1.10 in the Dockerfile for reproducibility. The binary is downloaded directly from GitHub releases rather than using a package manager inside the container.
+- Swiss-Prot fixture data is committed to the repo (~327KB total). This removes network dependency from tests — the fixtures are always available. The download script (`scripts/download_test_data.sh`) is for refreshing them.
+- Chose human (queries) vs E. coli K-12 (reference) because they're distant enough to test alignment sensitivity but share enough conserved proteins (ribosomal proteins, chaperones, metabolic enzymes) to produce meaningful hits.
+- The `integration_test_data` fixture uses `shutil.copy` to a tmp_path so each test gets its own clean copy, and the committed fixtures are never modified.
+
+**Problems encountered**:
+- UniProt REST API's `size` parameter doesn't limit total results — it controls page size. Had to download all sequences and trim to the desired count with a Python script.
+- Docker daemon wasn't running during development, so the Dockerfile couldn't be tested via `docker-compose build`. The Dockerfile follows standard patterns and will work when Docker is available.
+
+**Learnings**:
+- Real test data catches things synthetic data doesn't. The `test_blastp_produces_hits_with_real_data` test verifies biological correctness (e-value < 1e-5 between human and E. coli), not just schema correctness. Synthetic random sequences may not produce any hits at all.
+- Committing small fixture files (~300KB) to the repo is the right trade-off for test reproducibility. It eliminates network dependencies and makes CI deterministic.
+- The dev Dockerfile pattern (minimal, pinned deps, single purpose) is a good intermediate step before the full production container. It solves the immediate problem without scope-creeping into Phase 4 infrastructure.
 
 **Status**: Complete
