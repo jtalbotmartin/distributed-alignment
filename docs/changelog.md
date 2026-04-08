@@ -270,3 +270,35 @@ Each entry follows this structure:
 - Testing logging configuration by redirecting handler streams to `StringIO` is more reliable than capturing stderr — it gives direct access to the formatted output for JSON parsing.
 
 **Status**: Complete
+
+---
+
+### Task 1.7: End-to-end integration and CLI wiring — 2026-04-08
+
+**What was done**:
+- Fully implemented `src/distributed_alignment/cli.py` with three working subcommands:
+  - `ingest` — parses FASTA files, chunks both query and reference, writes manifests to the work directory.
+  - `run` — reads manifests, generates work packages, runs a single DIAMOND worker, merges results per query chunk.
+  - `status` — reads manifests and work stack state, displays a rich-formatted summary table.
+- `tests/test_integration.py` — end-to-end integration test exercising the full pipeline: ingest → chunk → schedule → align → merge → DuckDB query. Uses Swiss-Prot test data with 2 query chunks × 2 ref chunks (4 work packages). Verifies all packages complete, merged Parquet has correct schema, results are queryable, and biologically meaningful hits exist (evalue < 1e-5).
+- Updated `README.md` with complete quickstart: prerequisites, setup, running the pipeline (3 CLI commands), running tests (Docker and local), linting.
+
+**Decisions made**:
+- The work directory has a consistent structure: `chunks/{queries,references}/`, `work_stack/{pending,running,completed,poisoned}/`, `results/`, `merged/`, plus `query_manifest.json` and `ref_manifest.json` at the root. The `ingest` command creates the chunks and manifests, the `run` command creates everything else.
+- Chunk count is computed from `total_sequences // chunk_size`, not passed directly. This means the `--chunk-size` flag controls target chunk size rather than number of chunks — more intuitive for users who think in terms of "how big should each chunk be?" rather than "how many chunks?".
+- The `run` command accepts `--workers N` but only supports 1 in Phase 1 (prints a warning if >1 is requested). This keeps the CLI interface forward-compatible with Phase 2's multi-worker support.
+- `configure_logging(json_output=False)` in CLI commands so users see human-readable output. The integration test uses `json_output=True` for structured assertion.
+- The `status` command uses `rich.Table` for a formatted work package state display.
+- The integration test calls Python functions directly rather than CLI subprocesses — faster, easier to debug, and tests the same code paths.
+
+**Problems encountered**:
+- The persistent iCloud `.pth` file issue continues to surface whenever `uv sync` creates a new .venv: the editable install's `.pth` file points to the correct `src/` directory but Python doesn't process it due to the path containing spaces. `rm -rf .venv && uv sync` remains the fix. This is a known limitation of developing on iCloud Drive — the Docker path avoids it entirely.
+
+**Phase 1 rough edges to address in Phase 2**:
+- Single worker only — the `run` command processes all packages sequentially. Phase 2 adds multi-worker support via Ray.
+- No heartbeat/reaper during the run — the worker runs synchronously, so stale heartbeat detection isn't exercised. Phase 2's concurrent workers will need the reaper running in a background thread.
+- The `ingest` command counts sequences twice (once to determine chunk count, once to actually chunk). This could be optimised with a streaming approach that starts chunking immediately, but for Phase 1 with small datasets the double-pass is fine.
+- Manifest paths are absolute — works locally but won't be portable across machines. Could be made relative to work_dir.
+- No `--resume` support for the `run` command — if interrupted, you currently need to clear the work_stack and re-run. Phase 2 should detect existing work packages and resume.
+
+**Status**: Complete — Phase 1 MVP is done.

@@ -6,7 +6,7 @@ Decomposes large-scale alignment problems into independent work packages, distri
 
 ## Status
 
-🚧 Under active development. See [`docs/task-tracker.md`](docs/task-tracker.md) for progress.
+Phase 1 (Core Pipeline MVP) complete. See [`docs/task-tracker.md`](docs/task-tracker.md) for progress.
 
 ## Documentation
 
@@ -14,41 +14,60 @@ Decomposes large-scale alignment problems into independent work packages, distri
 - [Technical Design](docs/02-technical-design.md)
 - [Product Requirements](docs/03-product-requirements.md)
 - [Architecture Decision Records](docs/adr/)
-### Running tests (Docker — recommended)
 
-No local dependencies needed beyond Docker:
+## Quick Start
 
-```bash
-# Build the dev container (includes DIAMOND + Python deps)
-docker-compose build dev
+### Prerequisites
 
-# Run all tests (unit + integration, DIAMOND included)
-docker-compose run dev uv run pytest tests/ -v
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) for dependency management
+- [DIAMOND](https://github.com/bbuchfink/diamond/wiki) for alignment (or use Docker)
 
-# Run only integration tests
-docker-compose run dev uv run pytest tests/ -m integration -v
-```
-
-Code is baked into the image at build time. After editing source files,
-rebuild with `docker-compose build dev` to pick up changes.
-
-### Running tests (local)
+### Setup
 
 ```bash
-# Install Python dependencies
 uv sync
-
-# Run unit tests (no DIAMOND needed)
-uv run pytest tests/ -v
-
-# For integration tests, install DIAMOND first:
-#   macOS:  brew install diamond
-#   Linux:  see https://github.com/bbuchfink/diamond/wiki
-# Then:
-uv run pytest tests/ -m integration -v
 ```
 
-### Linting and type checking
+### Run the pipeline
+
+```bash
+# 1. Ingest: parse and chunk FASTA files
+distributed-alignment ingest \
+    --queries data/queries.fasta \
+    --reference data/reference.fasta \
+    --output-dir work/
+
+# 2. Run: align, then merge results
+distributed-alignment run --work-dir work/
+
+# 3. Status: check pipeline progress
+distributed-alignment status --work-dir work/
+```
+
+### Running tests
+
+**Docker (recommended — no local DIAMOND needed):**
+
+```bash
+docker-compose build dev
+docker-compose run --rm dev uv run pytest tests/ -v
+```
+
+**Local:**
+
+```bash
+# Unit tests (no DIAMOND needed)
+uv run pytest tests/ -m "not integration" -v
+
+# Integration tests (requires DIAMOND)
+uv run pytest tests/ -m integration -v
+
+# All tests
+uv run pytest tests/ -v
+```
+
+**Linting and type checking:**
 
 ```bash
 uv run ruff check src/ tests/

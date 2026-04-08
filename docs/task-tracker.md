@@ -202,3 +202,32 @@ Ingest → chunk → schedule → align (single worker) → merge → Parquet ou
 - Different components produce logs with correct component field
 
 ---
+
+### Task 1.7: End-to-end integration and CLI wiring
+
+**What**: Wire everything together so the CLI runs the full pipeline. Write the integration test.
+
+**Files**:
+- Update `src/distributed_alignment/cli.py` — implement `ingest` and `run` subcommands
+- `tests/test_integration.py`
+- Update `README.md` with quickstart
+
+**Key behaviours**:
+- `distributed-alignment ingest --queries <path> --reference <path> --output-dir <path>` → parses, validates, chunks both query and reference, writes manifests
+- `distributed-alignment run --work-dir <path> --workers 1` → generates work packages, runs single worker, merges results
+- `distributed-alignment status --work-dir <path>` → prints run summary
+
+**Integration test**:
+- Uses the test dataset from Task 1.4
+- Runs the full pipeline: ingest → schedule → align → merge
+- Verifies: all packages completed, merged Parquet exists with correct schema, results are queryable via DuckDB
+- Single test function, marked `@pytest.mark.integration`
+
+**Acceptance criteria for Phase 1 complete**:
+- `distributed-alignment ingest` + `distributed-alignment run` produces queryable Parquet results
+- `pytest tests/ -v` all green (unit + integration with DIAMOND installed)
+- `pytest tests/ -v -m "not integration"` all green (unit only, no DIAMOND needed)
+- `ruff check src/ tests/` clean
+- `mypy src/ --strict` clean
+
+---

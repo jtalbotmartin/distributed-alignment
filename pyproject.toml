@@ -31,6 +31,7 @@ packages = ["src/distributed_alignment"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 markers = [
     "integration: tests requiring DIAMOND binary",
 ]
