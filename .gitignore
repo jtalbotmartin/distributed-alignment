@@ -41,3 +41,4 @@ catalogue.duckdb.wal
 
 # Reference files (personal, not for the repo)
 ref/
+docs/notes.md

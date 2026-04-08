@@ -1,0 +1,21 @@
+# distributed-alignment default configuration
+# Override with environment variables (DA_ prefix) or CLI arguments
+
+chunk_size = 50000
+chunking_strategy = "deterministic_hash"
+diamond_binary = "diamond"
+diamond_sensitivity = "very-sensitive"
+diamond_max_target_seqs = 50
+diamond_timeout = 3600
+num_workers = 4
+heartbeat_interval = 30
+heartbeat_timeout = 120
+max_attempts = 3
+work_dir = "./work"
+results_dir = "./results"
+features_dir = "./features"
+catalogue_path = "./catalogue.duckdb"
+log_level = "INFO"
+metrics_port = 9090
+enable_cost_tracking = true
+cost_per_cpu_hour = 0.0464

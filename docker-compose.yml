@@ -1,0 +1,19 @@
+# Minimal dev stack for running tests with DIAMOND.
+# Full production stack (Ray, Prometheus, Grafana) is Phase 4.
+#
+# Usage:
+#   docker-compose build dev                                 # rebuild after code changes
+#   docker-compose run dev uv run pytest tests/ -v           # all unit tests
+#   docker-compose run dev uv run pytest tests/ -m integration -v   # integration tests
+#   docker-compose run dev uv run distributed-alignment --help      # CLI
+#
+# Code is baked into the image at build time. After editing source files,
+# rebuild with `docker-compose build dev` to pick up changes.
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /app
+    command: ["uv", "run", "pytest", "tests/", "-v"]
