@@ -319,3 +319,32 @@ Each entry follows this structure:
 - CLI tests use `typer.testing.CliRunner` which invokes the app in-process — no subprocess overhead, no DIAMOND dependency for most tests. Only the `run` command needs DIAMOND, and validation tests (missing manifests, workers warning) stop before reaching DIAMOND.
 
 **Status**: Complete
+
+---
+
+### Permanent fix for iCloud .pth import issue — 2026-04-08
+
+**What was done**:
+- Set `package = false` in `[tool.uv]` in `pyproject.toml`. This tells uv to not install the project as a Python package at all — no editable install, no `.pth` file, no import failures on iCloud paths.
+- Created `src/distributed_alignment/__main__.py` as CLI entry point, enabling `python -m distributed_alignment` as the invocation method.
+- Created `Makefile` with targets for all common operations: `setup`, `test`, `test-integration`, `test-all`, `lint`, `cli`, `ingest`, `run`, `status`. The Makefile sets `PYTHONPATH=src` so imports work without any package installation.
+- Updated `README.md` with `make` commands as the primary workflow.
+
+**Root cause analysis**:
+Python's `site.py` processes `.pth` files from `site-packages/` at startup. These files contain directory paths to add to `sys.path`. However, paths containing spaces (like iCloud's `Mobile Documents/com~apple~CloudDocs/`) are silently dropped — `site.py` doesn't error, it just doesn't add the path. This meant the editable install's `.pth` file (which pointed to our `src/` directory) was useless. The symptom: `ModuleNotFoundError: No module named 'distributed_alignment'` on every CLI invocation, intermittently depending on whether `uv run` had recently re-synced.
+
+Multiple workarounds were tried and failed:
+- `rm -rf .venv && uv sync` — worked temporarily, broke again after iCloud synced
+- `uv sync --no-editable` — installed correctly, but `uv run` re-synced to editable mode
+- `uv.toml` with `no-editable = true` — not a valid config key
+- `.env` with `UV_NO_EDITABLE=1` — uv doesn't read `.env` for its own config
+
+**Solution**:
+`package = false` stops uv from creating the broken `.pth` file entirely. Instead:
+- **pytest** uses `pythonpath = ["src"]` (from `pyproject.toml`) — this was already in place
+- **CLI** uses `PYTHONPATH=src uv run python -m distributed_alignment` — the Makefile handles this transparently
+- **Docker** is unaffected (no iCloud path)
+
+**Trade-off**: After code changes, `uv sync` no longer reinstalls the project (there's nothing to install). For pytest, this is transparent — `pythonpath` always reads from `src/`. For the CLI, the Makefile's `PYTHONPATH=src` always reads from `src/`. This is actually simpler than the editable install approach.
+
+**Status**: Complete

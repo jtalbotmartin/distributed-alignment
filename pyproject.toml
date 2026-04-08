@@ -60,6 +60,13 @@ select = [
     "TCH",  # flake8-type-checking
 ]
 
+[tool.uv]
+# Don't install the project as an editable package — Python's site.py
+# silently fails to process .pth files on paths containing spaces
+# (e.g. iCloud Drive). Instead, pytest uses `pythonpath = ["src"]` and
+# the CLI uses a __main__.py entry point via `uv run python -m distributed_alignment`.
+package = false
+
 [dependency-groups]
 dev = [
     "hypothesis>=6.0",

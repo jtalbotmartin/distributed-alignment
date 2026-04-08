@@ -1,0 +1,41 @@
+# Developer workflow targets.
+# Run `make help` to see available commands.
+
+PYTHONPATH := src
+export PYTHONPATH
+
+.PHONY: help setup test test-integration test-all lint cli
+
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+
+setup: ## Install dependencies
+	uv sync
+
+test: ## Run unit tests (no DIAMOND needed)
+	uv run pytest tests/ -v -m "not integration"
+
+test-integration: ## Run integration tests (requires DIAMOND)
+	uv run pytest tests/ -v -m integration
+
+test-all: ## Run all tests
+	uv run pytest tests/ -v
+
+lint: ## Run linting and type checking
+	uv run ruff check src/ tests/
+	uv run mypy src/ --strict
+
+cli: ## Show CLI help
+	uv run python -m distributed_alignment --help
+
+# Pipeline commands — pass ARGS for additional arguments
+# e.g.: make ingest ARGS="--queries data/q.fasta --reference data/r.fasta"
+ingest: ## Run ingest command
+	uv run python -m distributed_alignment ingest $(ARGS)
+
+run: ## Run alignment pipeline
+	uv run python -m distributed_alignment run $(ARGS)
+
+status: ## Show pipeline status
+	uv run python -m distributed_alignment status $(ARGS)

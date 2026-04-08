@@ -22,6 +22,7 @@ Phase 1 (Core Pipeline MVP) complete. See [`docs/task-tracker.md`](docs/task-tra
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) for dependency management
 - [DIAMOND](https://github.com/bbuchfink/diamond/wiki) for alignment (or use Docker)
+- GNU Make (optional, for shortcut commands)
 
 ### Setup
 
@@ -32,44 +33,34 @@ uv sync
 ### Run the pipeline
 
 ```bash
-# 1. Ingest: parse and chunk FASTA files
-distributed-alignment ingest \
+# Using make (recommended)
+make ingest ARGS="--queries data/queries.fasta --reference data/reference.fasta --output-dir work/"
+make run ARGS="--work-dir work/"
+make status ARGS="--work-dir work/"
+
+# Or directly
+PYTHONPATH=src uv run python -m distributed_alignment ingest \
     --queries data/queries.fasta \
     --reference data/reference.fasta \
     --output-dir work/
-
-# 2. Run: align, then merge results
-distributed-alignment run --work-dir work/
-
-# 3. Status: check pipeline progress
-distributed-alignment status --work-dir work/
+PYTHONPATH=src uv run python -m distributed_alignment run --work-dir work/
+PYTHONPATH=src uv run python -m distributed_alignment status --work-dir work/
 ```
 
 ### Running tests
 
-**Docker (recommended — no local DIAMOND needed):**
+```bash
+make test               # Unit tests (no DIAMOND needed)
+make test-integration   # Integration tests (requires DIAMOND)
+make test-all           # Everything
+make lint               # Ruff + mypy --strict
+```
+
+**Or via Docker (no local DIAMOND needed):**
 
 ```bash
 docker-compose build dev
 docker-compose run --rm dev uv run pytest tests/ -v
 ```
 
-**Local:**
-
-```bash
-# Unit tests (no DIAMOND needed)
-uv run pytest tests/ -m "not integration" -v
-
-# Integration tests (requires DIAMOND)
-uv run pytest tests/ -m integration -v
-
-# All tests
-uv run pytest tests/ -v
-```
-
-**Linting and type checking:**
-
-```bash
-uv run ruff check src/ tests/
-uv run mypy src/ --strict
-```
+Run `make help` to see all available commands.
