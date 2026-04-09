@@ -308,3 +308,29 @@ Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could b
 - Heartbeat thread stops cleanly when package fails
 
 ---
+
+### Task 2.2: Timeout reaper
+
+**What**: A reaper process that detects stale heartbeats and re-enqueues timed-out packages.
+
+**Key behaviours**:
+- `reap_stale(timeout_seconds)` on the work stack scans `running/` for packages where `now - heartbeat_at > timeout`
+- Timed-out packages are moved back to `pending/` with attempt incremented and `TIMEOUT` recorded in error_history
+- If a package has exhausted max_attempts via timeouts, it goes to `poisoned/`
+- The reaper can run as a background thread in any worker, or as a standalone process
+- For Phase 2: run the reaper as a background thread in the WorkerRunner, checking every `reaper_interval` seconds
+
+**Files**:
+- Update `src/distributed_alignment/scheduler/filesystem_backend.py` (implement/refine `reap_stale`)
+- Update `src/distributed_alignment/worker/runner.py` (reaper background thread)
+- `tests/test_reaper.py`
+
+**Tests**:
+- Package with stale heartbeat (older than timeout) gets moved back to PENDING
+- Package with fresh heartbeat is left alone
+- Package with max attempts exhausted goes to POISONED
+- Reaper handles empty running directory gracefully
+- Reaper doesn't interfere with actively running packages (heartbeat is recent)
+- Concurrent: reaper runs while worker is processing — no race conditions
+
+---

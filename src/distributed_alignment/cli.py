@@ -245,6 +245,8 @@ def run(
         max_target_seqs=effective_top_n,
         timeout=cfg.diamond_timeout,
         heartbeat_interval=cfg.heartbeat_interval,
+        heartbeat_timeout=cfg.heartbeat_timeout,
+        reaper_interval=cfg.reaper_interval,
     )
 
     typer.echo("Starting alignment...")

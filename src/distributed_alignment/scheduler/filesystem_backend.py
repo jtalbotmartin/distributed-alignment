@@ -290,35 +290,59 @@ class FileSystemWorkStack:
     def reap_stale(self, timeout_seconds: int) -> list[str]:
         """Reclaim running packages with stale heartbeats.
 
+        A package is considered stale if:
+        - ``heartbeat_at`` is ``None`` (heartbeat never started), or
+        - ``now - heartbeat_at > timeout_seconds``
+
+        Thread-safe: handles ``FileNotFoundError`` if a package is
+        completed/failed by another thread between listing and reading.
+
         Args:
             timeout_seconds: Seconds since last heartbeat before
                 a package is considered stale.
 
         Returns:
-            List of package IDs that were reaped.
+            List of package IDs that were successfully reaped.
         """
         running_dir = self._dir_for(WorkPackageState.RUNNING)
         now = datetime.now(tz=UTC)
         reaped: list[str] = []
 
-        for path in sorted(running_dir.iterdir()):
+        try:
+            candidates = sorted(running_dir.iterdir())
+        except FileNotFoundError:
+            return reaped
+
+        for path in candidates:
             if not path.name.endswith(".json"):
                 continue
 
-            package = WorkPackage(**json.loads(path.read_text()))
-
-            if package.heartbeat_at is None:
+            try:
+                package = WorkPackage(
+                    **json.loads(path.read_text())
+                )
+            except FileNotFoundError:
                 continue
 
-            age = (now - package.heartbeat_at).total_seconds()
-            if age <= timeout_seconds:
-                continue
+            # Check staleness
+            if package.heartbeat_at is not None:
+                age = (now - package.heartbeat_at).total_seconds()
+                if age <= timeout_seconds:
+                    continue
+                reason = (
+                    f"heartbeat stale: last seen "
+                    f"{package.heartbeat_at.isoformat()}, "
+                    f"timeout {timeout_seconds}s"
+                )
+            else:
+                reason = (
+                    f"heartbeat never started, "
+                    f"timeout {timeout_seconds}s"
+                )
 
             # Stale — reap it
             package.attempt += 1
-            package.error_history.append(
-                f"heartbeat_stale_after_{int(age)}s"
-            )
+            package.error_history.append(reason)
             package.claimed_by = None
             package.claimed_at = None
             package.heartbeat_at = None
@@ -333,16 +357,26 @@ class FileSystemWorkStack:
                 package.package_id,
                 WorkPackageState.RUNNING,
                 target_state,
-                reason=f"heartbeat_stale_after_{int(age)}s",
+                reason=reason,
                 attempt=package.attempt,
             )
 
             package.state = target_state
-            dst = self._package_path(package.package_id, target_state)
-            dst.write_text(
-                json.dumps(package.model_dump(mode="json"), indent=2)
+            dst = self._package_path(
+                package.package_id, target_state
             )
-            path.unlink()
+
+            try:
+                dst.write_text(
+                    json.dumps(
+                        package.model_dump(mode="json"), indent=2
+                    )
+                )
+                path.unlink()
+            except FileNotFoundError:
+                # Another reaper or worker moved it — skip
+                continue
+
             reaped.append(package.package_id)
 
         if reaped:

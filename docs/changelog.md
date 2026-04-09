@@ -405,3 +405,29 @@ Multiple workarounds were tried and failed:
 - Context managers (`__enter__`/`__exit__`) are the right pattern for thread lifecycle — the caller doesn't need to remember to call `stop()`, and exception paths are handled automatically.
 
 **Status**: Complete
+
+---
+
+### Task 2.2: Timeout reaper — 2026-04-09
+
+**What was done**:
+- Fixed `FileSystemWorkStack.reap_stale()`: packages with `heartbeat_at=None` are now treated as stale (previously skipped). Added `FileNotFoundError` handling around both the read and rename steps for thread safety. Improved error history messages to include the last heartbeat time and timeout value.
+- Created `ReaperThread` context manager in `worker/runner.py`: daemon thread that calls `reap_stale(timeout_seconds)` every `interval` seconds. Same `Event.wait(timeout=)` pattern as `HeartbeatSender`. Catches and logs exceptions rather than crashing.
+- Integrated `ReaperThread` into `WorkerRunner.run()`: the reaper wraps the entire worker claim loop, so it scans for stale packages from other dead workers while this worker is processing its own packages.
+- Added `heartbeat_timeout` and `reaper_interval` parameters to `WorkerRunner.__init__`. Wired from config in the CLI.
+- Exported `ReaperThread` from `worker/__init__.py`.
+- `tests/test_reaper.py` — 13 tests across 4 classes: `reap_stale` basics (8 tests: stale/fresh/null-heartbeat/poisoned/empty/multiple), race conditions (1 test: file disappears mid-scan), `ReaperThread` lifecycle (3 tests: detection/shutdown/exception), and integration (1 test: dead worker → reaper reclaims → new worker processes).
+
+**Decisions made**:
+- `heartbeat_at=None` is now treated as stale, not skipped. A package in `running/` with no heartbeat means the worker never started heartbeating — it's dead. The error message distinguishes "heartbeat stale: last seen X" from "heartbeat never started".
+- `ReaperThread` logs at WARNING on exception (not DEBUG) — a failing reaper is operationally significant, unlike a failed individual heartbeat.
+- The integration test runs the reaper and worker sequentially rather than relying on the worker loop to wait for the reaper. The current worker loop exits immediately when `claim()` returns None — it doesn't poll. In a multi-worker scenario (Phase 2 with Ray), the reaper runs independently from any single worker's claim loop. The test validates the chain: stale heartbeat → reaper detects → pending → worker claims → processes.
+- Race condition handling uses the write-then-unlink pattern: write the new state file first, then delete the old one. If the unlink fails (another thread moved it), the write may have created a duplicate — but this is benign because the package ID is unique and the next claim/reap will find it.
+
+**Problems encountered**:
+- The integration test initially failed because the worker loop exited before the reaper fired. The worker's `claim()` found nothing pending (the stale package was in `running/`, not `pending/`) and returned immediately. Fixed by running the reaper first to reclaim the package, then running the worker to process it.
+
+**Learnings**:
+- The reaper and worker loop have a timing dependency: the reaper must fire before the worker gives up. In a polling worker (Phase 2), this happens naturally because the worker retries `claim()`. In the current single-pass loop, the reaper needs to have already run. This is fine for Phase 1 where there's one worker, but Phase 2's multi-worker setup will need a polling claim loop with backoff.
+
+**Status**: Complete

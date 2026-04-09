@@ -128,6 +128,77 @@ class HeartbeatSender:
                 return
 
 
+class ReaperThread:
+    """Context manager that periodically reaps stale work packages.
+
+    Runs ``work_stack.reap_stale(timeout_seconds)`` every ``interval``
+    seconds in a background daemon thread. Reclaims packages whose
+    workers have died (stale heartbeats) and returns them to the queue.
+
+    Usage::
+
+        with ReaperThread(work_stack, timeout=120, interval=60):
+            run_worker_loop()
+    """
+
+    def __init__(
+        self,
+        work_stack: FileSystemWorkStack,
+        *,
+        timeout_seconds: int = 120,
+        interval: float = 60.0,
+    ) -> None:
+        self._work_stack = work_stack
+        self._timeout_seconds = timeout_seconds
+        self._interval = interval
+        self._stop_event = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def __enter__(self) -> ReaperThread:
+        self._stop_event.clear()
+        self._thread = threading.Thread(
+            target=self._run,
+            daemon=True,
+            name="reaper",
+        )
+        self._thread.start()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.stop()
+
+    def stop(self) -> None:
+        """Signal the reaper thread to stop and wait for it."""
+        self._stop_event.set()
+        if self._thread is not None:
+            self._thread.join(timeout=self._interval + 1)
+
+    @property
+    def is_alive(self) -> bool:
+        """Whether the reaper thread is still running."""
+        return self._thread is not None and self._thread.is_alive()
+
+    def _run(self) -> None:
+        """Reaper loop — runs in background thread."""
+        while not self._stop_event.wait(timeout=self._interval):
+            try:
+                reaped = self._work_stack.reap_stale(
+                    self._timeout_seconds
+                )
+                if not reaped:
+                    logger.debug("reaper_scan_clean")
+            except Exception:
+                logger.warning(
+                    "reaper_error",
+                    exc_info=True,
+                )
+
+
 class WorkerRunner:
     """Main worker loop: claim → align → write → complete → repeat.
 
@@ -139,6 +210,9 @@ class WorkerRunner:
         sensitivity: DIAMOND sensitivity mode.
         max_target_seqs: Maximum target sequences per query.
         timeout: DIAMOND subprocess timeout in seconds.
+        heartbeat_interval: Seconds between heartbeats.
+        heartbeat_timeout: Seconds before a package is stale.
+        reaper_interval: Seconds between reaper scans.
     """
 
     def __init__(
@@ -152,6 +226,8 @@ class WorkerRunner:
         max_target_seqs: int = 50,
         timeout: int = 3600,
         heartbeat_interval: float = 30.0,
+        heartbeat_timeout: int = 120,
+        reaper_interval: float = 60.0,
     ) -> None:
         self._work_stack = work_stack
         self._diamond = diamond
@@ -161,6 +237,8 @@ class WorkerRunner:
         self._max_target_seqs = max_target_seqs
         self._timeout = timeout
         self._heartbeat_interval = heartbeat_interval
+        self._heartbeat_timeout = heartbeat_timeout
+        self._reaper_interval = reaper_interval
         self._worker_id = f"worker-{uuid.uuid4().hex[:8]}"
 
         self._results_dir.mkdir(parents=True, exist_ok=True)
@@ -179,6 +257,10 @@ class WorkerRunner:
     def run(self) -> int:
         """Run the worker loop until no pending packages remain.
 
+        Starts a background reaper thread that reclaims packages with
+        stale heartbeats (from dead workers). The reaper runs alongside
+        the worker's own processing.
+
         Returns:
             Number of packages successfully processed.
         """
@@ -189,19 +271,24 @@ class WorkerRunner:
             worker_id=self._worker_id,
         )
 
-        while True:
-            package = self._work_stack.claim(self._worker_id)
-            if package is None:
-                break
+        with ReaperThread(
+            self._work_stack,
+            timeout_seconds=self._heartbeat_timeout,
+            interval=self._reaper_interval,
+        ):
+            while True:
+                package = self._work_stack.claim(self._worker_id)
+                if package is None:
+                    break
 
-            with HeartbeatSender(
-                self._work_stack,
-                package.package_id,
-                interval=self._heartbeat_interval,
-            ):
-                success = self._process_package(package)
-            if success:
-                completed += 1
+                with HeartbeatSender(
+                    self._work_stack,
+                    package.package_id,
+                    interval=self._heartbeat_interval,
+                ):
+                    success = self._process_package(package)
+                if success:
+                    completed += 1
 
         logger.info(
             "worker_finished",
