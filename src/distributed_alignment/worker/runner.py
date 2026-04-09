@@ -7,6 +7,7 @@ DiamondWrapper, writes result Parquet, and marks packages complete.
 from __future__ import annotations
 
 import threading
+import time
 import uuid
 from typing import TYPE_CHECKING
 
@@ -202,6 +203,9 @@ class ReaperThread:
 class WorkerRunner:
     """Main worker loop: claim → align → write → complete → repeat.
 
+    Uses a polling claim loop with exponential backoff. Exits when
+    idle for longer than ``max_idle_time`` (no successful claims).
+
     Args:
         work_stack: WorkStack to claim packages from.
         diamond: DiamondWrapper for executing alignment.
@@ -213,6 +217,7 @@ class WorkerRunner:
         heartbeat_interval: Seconds between heartbeats.
         heartbeat_timeout: Seconds before a package is stale.
         reaper_interval: Seconds between reaper scans.
+        max_idle_time: Seconds with no successful claim before exit.
     """
 
     def __init__(
@@ -228,6 +233,7 @@ class WorkerRunner:
         heartbeat_interval: float = 30.0,
         heartbeat_timeout: int = 120,
         reaper_interval: float = 60.0,
+        max_idle_time: float = 30.0,
     ) -> None:
         self._work_stack = work_stack
         self._diamond = diamond
@@ -239,7 +245,9 @@ class WorkerRunner:
         self._heartbeat_interval = heartbeat_interval
         self._heartbeat_timeout = heartbeat_timeout
         self._reaper_interval = reaper_interval
+        self._max_idle_time = max_idle_time
         self._worker_id = f"worker-{uuid.uuid4().hex[:8]}"
+        self._shutdown = threading.Event()
 
         self._results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -254,17 +262,28 @@ class WorkerRunner:
         """Return this worker's unique identifier."""
         return self._worker_id
 
-    def run(self) -> int:
-        """Run the worker loop until no pending packages remain.
+    def request_shutdown(self) -> None:
+        """Signal the worker to stop after finishing current work."""
+        self._shutdown.set()
 
-        Starts a background reaper thread that reclaims packages with
-        stale heartbeats (from dead workers). The reaper runs alongside
-        the worker's own processing.
+    def run(self) -> int:
+        """Run the worker loop with polling and backoff.
+
+        Claims packages from the work stack. When no packages are
+        available, retries with exponential backoff (0.5s → 1s → 2s →
+        5s max). Exits when idle for ``max_idle_time`` seconds or when
+        shutdown is requested.
+
+        A background reaper thread runs alongside the poll loop to
+        reclaim packages abandoned by dead workers.
 
         Returns:
             Number of packages successfully processed.
         """
         completed = 0
+        backoff = 0.5
+        max_backoff = 5.0
+        idle_since: float | None = None
 
         logger.info(
             "worker_started",
@@ -276,10 +295,32 @@ class WorkerRunner:
             timeout_seconds=self._heartbeat_timeout,
             interval=self._reaper_interval,
         ):
-            while True:
+            while not self._shutdown.is_set():
                 package = self._work_stack.claim(self._worker_id)
+
                 if package is None:
-                    break
+                    # Nothing to do — track idle time
+                    now = time.monotonic()
+                    if idle_since is None:
+                        idle_since = now
+
+                    idle_duration = now - idle_since
+                    if idle_duration >= self._max_idle_time:
+                        logger.info(
+                            "worker_idle_exit",
+                            worker_id=self._worker_id,
+                            idle_seconds=round(idle_duration, 1),
+                        )
+                        break
+
+                    # Backoff before retrying
+                    time.sleep(backoff)
+                    backoff = min(backoff * 2, max_backoff)
+                    continue
+
+                # Got a package — reset idle tracking and backoff
+                idle_since = None
+                backoff = 0.5
 
                 with HeartbeatSender(
                     self._work_stack,
@@ -481,3 +522,74 @@ class WorkerRunner:
         if candidates:
             return candidates[0]
         return None
+
+
+def run_worker_process(
+    work_stack_dir: Path,
+    chunks_dir: Path,
+    results_dir: Path,
+    *,
+    diamond_binary: str = "diamond",
+    sensitivity: str = "very-sensitive",
+    max_target_seqs: int = 50,
+    timeout: int = 3600,
+    heartbeat_interval: float = 30.0,
+    heartbeat_timeout: int = 120,
+    reaper_interval: float = 60.0,
+    max_idle_time: float = 30.0,
+    log_level: str = "INFO",
+    run_id: str | None = None,
+) -> int:
+    """Entry point for a worker subprocess.
+
+    Creates its own logging config, work stack connection,
+    DiamondWrapper, and WorkerRunner. Designed to be called via
+    ``multiprocessing.Process(target=run_worker_process, kwargs=...)``.
+
+    Args:
+        work_stack_dir: Path to the work stack directory.
+        chunks_dir: Path to the chunks directory.
+        results_dir: Path to the results directory.
+        diamond_binary: DIAMOND binary path.
+        sensitivity: DIAMOND sensitivity mode.
+        max_target_seqs: Max hits per query.
+        timeout: DIAMOND subprocess timeout.
+        heartbeat_interval: Seconds between heartbeats.
+        heartbeat_timeout: Seconds before stale.
+        reaper_interval: Seconds between reaper scans.
+        max_idle_time: Seconds idle before exit.
+        log_level: Log level for this process.
+        run_id: Pipeline run ID for log correlation.
+
+    Returns:
+        Number of packages completed.
+    """
+    from pathlib import Path as _Path
+
+    from distributed_alignment.observability.logging import configure_logging
+    from distributed_alignment.scheduler.filesystem_backend import (
+        FileSystemWorkStack,
+    )
+
+    # Each process needs its own logging config (contextvars don't
+    # propagate across process boundaries)
+    configure_logging(level=log_level, run_id=run_id, json_output=True)
+
+    stack = FileSystemWorkStack(_Path(work_stack_dir))
+    diamond = DiamondWrapper(binary=diamond_binary, threads=1)
+
+    runner = WorkerRunner(
+        stack,
+        diamond,
+        _Path(chunks_dir),
+        _Path(results_dir),
+        sensitivity=sensitivity,
+        max_target_seqs=max_target_seqs,
+        timeout=timeout,
+        heartbeat_interval=heartbeat_interval,
+        heartbeat_timeout=heartbeat_timeout,
+        reaper_interval=reaper_interval,
+        max_idle_time=max_idle_time,
+    )
+
+    return runner.run()

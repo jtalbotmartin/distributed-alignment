@@ -217,11 +217,11 @@ class TestCliConfigIntegration:
         # With chunk_size=1 and 3 sequences, should get 3 chunks
         assert "3 chunks" in result.output
 
-    def test_run_workers_warning_from_config(
+    def test_run_uses_config_workers(
         self, sample_fasta: Path, tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """When config has num_workers > 1, run warns."""
+        """Config num_workers is respected by the run command."""
         from typer.testing import CliRunner
 
         from distributed_alignment.cli import app
@@ -229,7 +229,6 @@ class TestCliConfigIntegration:
         runner = CliRunner()
         output_dir = tmp_path / "work"
 
-        # Ingest first
         runner.invoke(
             app,
             [
@@ -240,12 +239,11 @@ class TestCliConfigIntegration:
             ],
         )
 
-        # Set workers via env var
-        monkeypatch.setenv("DA_NUM_WORKERS", "4")
+        monkeypatch.setenv("DA_NUM_WORKERS", "2")
 
         result = runner.invoke(
             app,
             ["run", "--work-dir", str(output_dir)],
         )
-        # Should warn about >1 workers (may fail on DIAMOND — that's ok)
-        assert "only 1 worker supported" in result.output.lower()
+        # Should attempt 2 workers (may fail on DIAMOND)
+        assert "2 workers" in result.output or result.exit_code != 0

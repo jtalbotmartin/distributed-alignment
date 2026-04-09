@@ -201,13 +201,6 @@ def run(
         level=cfg.log_level, run_id=run_id, json_output=False
     )
 
-    if effective_workers > 1:
-        typer.echo(
-            f"Warning: only 1 worker supported in Phase 1 "
-            f"(requested {effective_workers}). Using 1 worker.",
-            err=True,
-        )
-
     # Check DIAMOND is available
     diamond = DiamondWrapper(binary=cfg.diamond_binary, threads=1)
     if not diamond.check_available():
@@ -232,25 +225,71 @@ def run(
         f"× {len(r_manifest.chunks)} ref chunks)"
     )
 
-    # Run worker
+    # Run workers
     chunks_dir = work_path / "chunks"
     results_dir = work_path / "results"
 
-    runner = WorkerRunner(
-        stack,
-        diamond,
-        chunks_dir,
-        results_dir,
-        sensitivity=effective_sensitivity,
-        max_target_seqs=effective_top_n,
-        timeout=cfg.diamond_timeout,
-        heartbeat_interval=cfg.heartbeat_interval,
-        heartbeat_timeout=cfg.heartbeat_timeout,
-        reaper_interval=cfg.reaper_interval,
-    )
+    if effective_workers <= 1:
+        # Single worker — no multiprocessing overhead
+        runner = WorkerRunner(
+            stack,
+            diamond,
+            chunks_dir,
+            results_dir,
+            sensitivity=effective_sensitivity,
+            max_target_seqs=effective_top_n,
+            timeout=cfg.diamond_timeout,
+            heartbeat_interval=cfg.heartbeat_interval,
+            heartbeat_timeout=cfg.heartbeat_timeout,
+            reaper_interval=cfg.reaper_interval,
+        )
+        typer.echo("Starting alignment (1 worker)...")
+        runner.run()
+    else:
+        import multiprocessing
 
-    typer.echo("Starting alignment...")
-    runner.run()
+        from distributed_alignment.worker.runner import (
+            run_worker_process,
+        )
+
+        typer.echo(
+            f"Starting alignment ({effective_workers} workers)..."
+        )
+
+        worker_kwargs = {
+            "work_stack_dir": str(work_stack_dir),
+            "chunks_dir": str(chunks_dir),
+            "results_dir": str(results_dir),
+            "diamond_binary": cfg.diamond_binary,
+            "sensitivity": effective_sensitivity,
+            "max_target_seqs": effective_top_n,
+            "timeout": cfg.diamond_timeout,
+            "heartbeat_interval": cfg.heartbeat_interval,
+            "heartbeat_timeout": cfg.heartbeat_timeout,
+            "reaper_interval": cfg.reaper_interval,
+            "log_level": cfg.log_level,
+            "run_id": run_id,
+        }
+
+        processes: list[multiprocessing.Process] = []
+        for i in range(effective_workers):
+            p = multiprocessing.Process(
+                target=run_worker_process,
+                kwargs=worker_kwargs,
+                name=f"worker-{i}",
+            )
+            p.start()
+            processes.append(p)
+
+        # Wait for all workers to finish
+        for p in processes:
+            p.join()
+            if p.exitcode and p.exitcode != 0:
+                typer.echo(
+                    f"Warning: {p.name} exited with "
+                    f"code {p.exitcode}",
+                    err=True,
+                )
 
     # Merge results per query chunk
     merged_dir = work_path / "merged"

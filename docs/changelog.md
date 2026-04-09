@@ -431,3 +431,32 @@ Multiple workarounds were tried and failed:
 - The reaper and worker loop have a timing dependency: the reaper must fire before the worker gives up. In a polling worker (Phase 2), this happens naturally because the worker retries `claim()`. In the current single-pass loop, the reaper needs to have already run. This is fine for Phase 1 where there's one worker, but Phase 2's multi-worker setup will need a polling claim loop with backoff.
 
 **Status**: Complete
+
+---
+
+### Task 2.3: Multi-worker execution via multiprocessing — 2026-04-09
+
+**What was done**:
+- Replaced the single-pass worker loop with a **polling claim loop with exponential backoff** (0.5s → 1s → 2s → 5s max). Workers now retry `claim()` when the queue is empty, allowing them to pick up packages reaped from dead workers. Workers exit after `max_idle_time` seconds with no successful claims.
+- Added `request_shutdown()` method to `WorkerRunner` using `threading.Event` for clean external shutdown.
+- Added `run_worker_process()` module-level function as the entry point for worker subprocesses. Each subprocess creates its own structlog config, work stack connection, `DiamondWrapper`, and `WorkerRunner`.
+- Updated CLI `run` command: when `--workers N > 1`, spawns N `multiprocessing.Process` instances, each running `run_worker_process()`. Waits for all to finish with `join()`, logs warnings on non-zero exits. Single worker mode (`--workers 1`) uses the existing in-process path with no multiprocessing overhead.
+- `tests/test_multiworker.py` — 7 tests across 4 classes: polling loop (idle exit, process-and-exit, shutdown signal), multi-worker (all packages completed, no duplicates), dead-worker recovery (stale heartbeat → reaper → new worker processes), and actual process death via `SIGKILL` (multiprocessing.Process killed → reaper reclaims → recovery).
+
+**Decisions made**:
+- **Polling with exponential backoff** rather than a fixed interval. Short backoff (0.5s) right after a claim attempt means workers are responsive to new packages. Long backoff (capped at 5s) prevents busy-waiting on an empty queue. Backoff resets to 0.5s after any successful claim.
+- **`max_idle_time` (default 30s)** as the exit condition rather than "pending == 0". The reaper may return packages to pending at any time — a worker that exits because pending is zero would miss reaped packages. Idle time is the right signal: "I've been polling for 30 seconds and nothing has appeared."
+- **`multiprocessing.Process` (not Pool)**: each process is independent with its own lifecycle. A pool would farm tasks from a central queue, which conflicts with our work stack's pull-based claim model. Processes that crash are detected via non-zero exit codes.
+- **Process arguments are all serialisable primitives** (`str` paths, `int`/`float` config values). No pickling of complex objects — each subprocess reconstructs its own `FileSystemWorkStack`, `DiamondWrapper`, etc. from the paths.
+- The SIGKILL test uses a module-level function (`_slow_worker_target`) because macOS's `spawn` multiprocessing start method can't pickle local closures.
+
+**Problems encountered**:
+- `AttributeError: Can't pickle local object` — macOS uses the `spawn` multiprocessing start method by default, which pickles the target function and sends it to the child process. Local functions (defined inside a test method) can't be pickled. Moved the worker target to module level.
+- Unit tests with timing-dependent behaviour (polling loops, idle timeouts, reaper intervals) take real clock time. The full unit test suite now takes ~5-6 minutes due to these tests. Timeouts are kept as short as possible without being flaky.
+
+**Learnings**:
+- The polling loop with backoff elegantly resolves the timing dependency between the reaper and worker identified in Task 2.2. Workers no longer exit on the first empty `claim()` — they keep polling, giving the reaper time to reclaim stale packages.
+- macOS's `spawn` multiprocessing requires all process targets and arguments to be picklable. This is a stronger constraint than Linux's `fork` (where the child inherits the parent's memory). Designing `run_worker_process()` with only primitive arguments ensures cross-platform compatibility.
+- `multiprocessing.Process` with independent work stacks (all accessing the same filesystem directory) gives true parallelism without shared-memory coordination. The filesystem's atomic `os.rename()` is the only synchronisation mechanism.
+
+**Status**: Complete

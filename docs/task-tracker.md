@@ -334,3 +334,30 @@ Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could b
 - Concurrent: reaper runs while worker is processing — no race conditions
 
 ---
+
+### Task 2.3: Multi-worker execution (multiprocessing, no Ray yet)
+
+**What**: Run N workers concurrently using Python multiprocessing. This is the stepping stone to Ray — get the concurrency semantics right with simpler tooling first.
+
+**Why multiprocessing before Ray**: The atomic claim mechanism, heartbeats, and reaper all need to work correctly with real concurrency before adding Ray's complexity. Multiprocessing gives us real parallel execution with real race conditions to test against.
+
+**Key behaviours**:
+- `distributed-alignment run --work-dir work/ --workers 4` spawns 4 worker processes
+- Each worker runs an independent WorkerRunner loop
+- Workers compete for packages via the atomic claim mechanism
+- The reaper runs as a background thread in one (or all) workers
+- When all packages are processed, workers exit cleanly
+- The CLI waits for all workers to finish before running the merge step
+
+**Files**:
+- Update `src/distributed_alignment/cli.py` (multi-worker support)
+- Update `src/distributed_alignment/worker/runner.py` (if needed for multi-process compatibility)
+- `tests/test_multiworker.py`
+
+**Tests**:
+- 4 workers processing 8 packages → all 8 completed, none duplicated
+- Worker death (kill one process mid-run) → its package is eventually reclaimed via reaper and completed by another worker
+- All workers exit cleanly when work is exhausted
+- Status shows correct counts throughout
+
+---

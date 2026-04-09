@@ -206,13 +206,12 @@ class TestRunValidation:
         assert result.exit_code == 1
         assert "manifests not found" in result.output
 
-    def test_run_workers_warning(
+    def test_run_accepts_multiple_workers(
         self, sample_fasta: Path, tmp_path: Path
     ) -> None:
-        """Requesting >1 workers prints a warning."""
+        """--workers N > 1 is accepted (may fail on DIAMOND, that's ok)."""
         output_dir = tmp_path / "work"
 
-        # Ingest first
         runner.invoke(
             app,
             [
@@ -226,10 +225,10 @@ class TestRunValidation:
             ],
         )
 
-        # Run with --workers 4 — should warn but may fail on DIAMOND
+        # Run with --workers 2 — should attempt multi-worker
         result = runner.invoke(
             app,
-            ["run", "--work-dir", str(output_dir), "--workers", "4"],
+            ["run", "--work-dir", str(output_dir), "--workers", "2"],
         )
-        # The warning should appear regardless of whether DIAMOND is installed
-        assert "only 1 worker supported" in result.output.lower()
+        # Might fail on DIAMOND — but should not fail on arg parsing
+        assert "manifests not found" not in result.output

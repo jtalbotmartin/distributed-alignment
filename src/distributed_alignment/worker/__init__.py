@@ -10,6 +10,7 @@ from distributed_alignment.worker.runner import (
     ReaperThread,
     WorkerRunner,
     parquet_chunk_to_fasta,
+    run_worker_process,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "WorkerRunner",
     "parquet_chunk_to_fasta",
     "parse_output",
+    "run_worker_process",
 ]
