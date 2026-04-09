@@ -458,8 +458,38 @@ Multiple workarounds were tried and failed:
 - The polling loop with backoff elegantly resolves the timing dependency between the reaper and worker identified in Task 2.2. Workers no longer exit on the first empty `claim()` — they keep polling, giving the reaper time to reclaim stale packages.
 - macOS's `spawn` multiprocessing requires all process targets and arguments to be picklable. This is a stronger constraint than Linux's `fork` (where the child inherits the parent's memory). Designing `run_worker_process()` with only primitive arguments ensures cross-platform compatibility.
 - `multiprocessing.Process` with independent work stacks (all accessing the same filesystem directory) gives true parallelism without shared-memory coordination. The filesystem's atomic `os.rename()` is the only synchronisation mechanism.
+
+**Status**: Complete
+
+---
+
+### Task 2.4: Chaos testing — 2026-04-09
+
+**What was done**:
+- `tests/test_chaos.py` — 8 chaos tests across 7 test classes covering 7 failure scenarios:
+  1. **Worker SIGKILL during alignment** (integration): Kill one of two workers mid-processing → surviving worker's reaper reclaims the dead worker's packages → all completed.
+  2. **Simulated OOM — DIAMOND exit 137**: Mock fails twice with exit code 137, succeeds on 3rd → completed with 2 OOM entries in error_history. Also: always-OOM → poisoned.
+  3. **Intermittent failures**: Mock alternates success/failure → all 4 packages eventually complete via retries.
+  4. **Corrupt work package JSON**: Invalid JSON and wrong-schema JSON in `pending/` → worker skips them, moves to `poisoned/`, processes valid packages.
+  5. **Result write failure (simulated disk full)**: Patch `pq.write_table` to raise `OSError` on first call → package is failed and retried, worker continues.
+  6. **All workers die, then restart**: SIGKILL all workers → make heartbeats stale → spawn new workers → reapers reclaim → all packages completed.
+
 **Bug found and fixed**:
 - **Corrupt JSON crash in `claim()`**: `FileSystemWorkStack.claim()` renamed a file from `pending/` to `running/` then tried to parse it (`WorkPackage(**json.loads(...))`). If the JSON was corrupt (invalid syntax or wrong schema), the parse raised an unhandled exception and the corrupt file got stuck in `running/` forever — blocking the queue.
 - **Fix**: Wrapped the JSON parse in `try/except`. On parse failure, the corrupt file is moved to `poisoned/` (so it's visible for investigation) and the worker continues to the next candidate. Logged as `corrupt_work_package` at ERROR level.
+
+**Decisions made**:
+- Integration chaos tests (SIGKILL scenarios) use module-level target functions for macOS `spawn` compatibility. They manually make heartbeats stale after kill rather than waiting for real staleness — this makes tests faster and deterministic.
+- Single-process chaos tests (OOM, intermittent failures, corrupt JSON, write failures) use mocks — no multiprocessing needed, much faster.
+- The `_wait_for()` helper polls `stack.status()` with a timeout rather than using fixed `time.sleep()` — this makes tests as fast as possible while still reliable.
+
+**Fault tolerance verified under 7 failure scenarios**:
+- Worker process death (SIGKILL) during processing
+- DIAMOND OOM (exit 137) with retry and poison
+- Intermittent DIAMOND failures with retry
+- Corrupt work package JSON in the queue
+- Disk write failures during result output
+- Full cluster death and restart
+- Wrong-schema work package files
 
 **Status**: Complete

@@ -361,3 +361,21 @@ Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could b
 - Status shows correct counts throughout
 
 ---
+
+### Task 2.4: Chaos testing
+
+**What**: Explicit tests that simulate failures and verify recovery. These are the tests that prove the system is fault-tolerant, not just concurrent.
+
+**Key behaviours**:
+- Kill a worker process mid-alignment (SIGKILL) → package times out → reaper reclaims → another worker completes it
+- Kill a worker between claim and execution start → same recovery path
+- Simulate OOM (mock DIAMOND returning exit code 137) → package fails → retried → eventually succeeds or poisons
+- Corrupt a work package JSON file → worker handles gracefully, doesn't crash the loop
+- Fill up the results directory (mock disk full) → worker fails the package cleanly
+
+**Files**:
+- `tests/test_chaos.py`
+
+**Tests**: All marked `@pytest.mark.integration` (they need real multi-process execution and potentially DIAMOND).
+
+---
