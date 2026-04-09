@@ -348,3 +348,33 @@ Multiple workarounds were tried and failed:
 **Trade-off**: After code changes, `uv sync` no longer reinstalls the project (there's nothing to install). For pytest, this is transparent — `pythonpath` always reads from `src/`. For the CLI, the Makefile's `PYTHONPATH=src` always reads from `src/`. This is actually simpler than the editable install approach.
 
 **Status**: Complete
+
+---
+
+## Phase 2: Fault Tolerance & Distribution
+
+### Task 2.0: Wire config into CLI — 2026-04-09
+
+**What was done**:
+- Added Phase 2 fields to `DistributedAlignmentConfig`: `backend` (`Literal["local", "ray"]`, default `"local"`) and `reaper_interval` (default 60 seconds). Existing fields `heartbeat_interval`, `heartbeat_timeout`, `max_attempts` were already present.
+- Created `load_config()` function in `config.py` that handles TOML file discovery (searches `work_dir` first, then cwd), applies env var overrides, and merges explicit CLI overrides. Overrides with value `None` are ignored, so CLI flags only take effect when explicitly provided.
+- Rewired all CLI subcommands (`ingest`, `run`, `status`) to use `load_config()` instead of hard-coded defaults. CLI flags now default to `None` so they only override config when the user explicitly passes them.
+- Updated `distributed_alignment.toml` with all settings, grouped by category, with inline comments explaining each field.
+- `tests/test_config.py` — 16 new tests across 6 test classes: defaults, Phase 2 fields, TOML loading, env var overrides, `load_config` with TOML discovery and override precedence, CLI config integration.
+
+**Decisions made**:
+- CLI flag defaults are `None`, not the config defaults. This is the standard pattern for "user explicitly provided vs using default" — if the CLI value is `None`, the config file / env var / default applies. If set, the CLI flag wins. Pydantic Settings' init kwargs have highest priority in the source chain.
+- `load_config()` uses `os.chdir()` temporarily to make `TomlConfigSettingsSource` find the TOML file in the work directory. This is slightly hacky but pydantic-settings doesn't support specifying a custom TOML path at runtime — `toml_file` in `model_config` is class-level, not instance-level. The `chdir` is wrapped in a `try/finally` block.
+- The `run` command now passes `cfg.max_attempts` to `generate_work_packages()` and `cfg.diamond_timeout` to `WorkerRunner`, using values from the config instead of hard-coded defaults.
+- Kept the `backend` field as a simple `Literal` — it's not wired into the worker yet (Phase 2 will use it to choose between `local` mode and `ray` mode).
+
+**Problems encountered**:
+- `from __future__ import annotations` + Typer: Moving `Path` into a `TYPE_CHECKING` block broke Typer because it evaluates annotations at runtime to build CLI parameters. Got `NameError: name 'Path' is not defined` on all CLI commands. Fixed by keeping `Path` as a runtime import with `# noqa: TCH003`.
+- `load_config()` initially tried to set an env var to redirect TOML loading — pydantic-settings `TomlConfigSettingsSource` ignores custom env vars and always reads from cwd. Switched to the `os.chdir()` approach.
+- mypy strict rejected `**dict[str, object]` unpacked into `BaseSettings.__init__` because the init has specific typed kwargs. Added `# type: ignore[arg-type]` — the dict values are validated by Pydantic at runtime.
+
+**Learnings**:
+- Typer and `from __future__ import annotations` don't mix well with `TYPE_CHECKING` — Typer needs runtime access to type annotations for CLI parameter generation. Any type used in a `@app.command()` function signature must be a real runtime import.
+- Pydantic Settings' TOML file discovery is cwd-relative and class-level. For runtime configuration of which file to read, temporary `chdir()` is the simplest workaround. An alternative would be a factory method that creates a subclass with a different `toml_file`, but that's over-engineered for this use case.
+
+**Status**: Complete

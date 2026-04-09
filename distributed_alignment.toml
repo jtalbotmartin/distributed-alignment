@@ -1,21 +1,41 @@
-# distributed-alignment default configuration
-# Override with environment variables (DA_ prefix) or CLI arguments
+# distributed-alignment configuration
+#
+# Precedence (highest to lowest):
+#   CLI flags → environment variables (DA_ prefix) → this file → defaults
+#
+# Environment variable examples:
+#   DA_CHUNK_SIZE=10000
+#   DA_DIAMOND_SENSITIVITY=fast
+#   DA_NUM_WORKERS=8
 
-chunk_size = 50000
-chunking_strategy = "deterministic_hash"
-diamond_binary = "diamond"
-diamond_sensitivity = "very-sensitive"
-diamond_max_target_seqs = 50
-diamond_timeout = 3600
-num_workers = 4
-heartbeat_interval = 30
-heartbeat_timeout = 120
-max_attempts = 3
+# --- Ingestion ---
+chunk_size = 50000                      # Target sequences per chunk
+chunking_strategy = "deterministic_hash" # "deterministic_hash" or "sequential"
+
+# --- DIAMOND alignment ---
+diamond_binary = "diamond"              # Path or name of DIAMOND binary
+diamond_sensitivity = "very-sensitive"  # fast, sensitive, very-sensitive, ultra-sensitive
+diamond_max_target_seqs = 50            # Max hits per query
+diamond_timeout = 3600                  # Subprocess timeout in seconds
+
+# --- Workers ---
+num_workers = 4                         # Number of worker processes
+heartbeat_interval = 30                 # Seconds between worker heartbeats
+heartbeat_timeout = 120                 # Seconds before a package is stale
+max_attempts = 3                        # Max retries before poisoning a package
+backend = "local"                       # "local" (Phase 1) or "ray" (Phase 2)
+
+# --- Reaper ---
+reaper_interval = 60                    # Seconds between stale heartbeat scans
+
+# --- Paths ---
 work_dir = "./work"
 results_dir = "./results"
 features_dir = "./features"
 catalogue_path = "./catalogue.duckdb"
-log_level = "INFO"
-metrics_port = 9090
+
+# --- Observability ---
+log_level = "INFO"                      # DEBUG, INFO, WARNING, ERROR
+metrics_port = 9090                     # Prometheus metrics port
 enable_cost_tracking = true
-cost_per_cpu_hour = 0.0464
+cost_per_cpu_hour = 0.0464              # Estimated cost for scaling projections

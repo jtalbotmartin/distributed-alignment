@@ -231,3 +231,57 @@ Ingest → chunk → schedule → align (single worker) → merge → Parquet ou
 - `mypy src/ --strict` clean
 
 ---
+
+# `distributed-alignment` — Phase 2 Task Breakdown
+
+## Phase 2: Fault Tolerance & Distribution
+
+**Goal**: Multi-worker execution with fault recovery, containerised deployment, metrics, monitoring, and CI/CD.
+
+This is the phase that makes the project impressive. Phase 1 proved the pipeline works end-to-end; Phase 2 proves it works when things go wrong and when multiple workers are competing for work.
+
+---
+
+### What Phase 2 covers (from TDD §9)
+
+- Heartbeat mechanism and timeout reaper
+- Retry with backoff, poison queue for permanent failures
+- Ray integration (workers as Ray actors)
+- Docker packaging (Dockerfile + docker-compose with N workers)
+- Chaos tests: kill worker mid-package, verify recovery
+- Prometheus metrics exposition
+- Grafana dashboard JSON
+- GitHub Actions CI/CD pipeline
+
+### Breakdown
+
+Phase 2 breakdown — 10 tasks (2.0 through 2.9), ordered so each builds on the last.
+
+The key structural decision is multiprocessing before Ray (Task 2.3 before 2.5). This matters because the hard problems in Phase 2 — atomic claims under real concurrency, heartbeat/reaper race conditions, worker death recovery — are all concurrency problems, not Ray problems. Getting them right with multiprocessing (which is simpler to debug, no cluster setup, no Ray overhead) means that when you add Ray, you're just swapping the execution backend, not debugging distributed systems issues and Ray issues simultaneously.
+
+The other thing worth noting is the ordering of 2.1 → 2.2 → 2.3 → 2.4. Heartbeats are useless without a reaper, the reaper is meaningless without multiple workers, and chaos tests validate the whole chain. Each task has a clear "this is why this exists" that references the previous one.
+
+Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could be done in any order. I put them after the core concurrency work because they're less architecturally risky — they're important for the portfolio but unlikely to surface bugs in the core system.
+
+---
+
+## Task Breakdown
+
+### Task 2.0: Wire config into CLI + minor Phase 1 cleanup
+
+**What**: The `DistributedAlignmentConfig` class exists but the CLI hard-codes values as Typer defaults. Wire the config so that `distributed_alignment.toml` settings are respected, with CLI flags as overrides.
+
+**Why now**: Phase 2 adds config for heartbeat intervals, timeouts, worker counts, and Ray settings. The config needs to actually work before we add more fields to it.
+
+**Key behaviours**:
+- CLI loads config from `distributed_alignment.toml` if present in the working directory, then applies CLI flag overrides
+- Environment variables (`DA_*`) override the TOML file
+- CLI flags override everything
+- Add new config fields needed for Phase 2: `heartbeat_interval`, `heartbeat_timeout`, `max_attempts`, `num_workers`
+
+**Files**:
+- Update `src/distributed_alignment/config.py`
+- Update `src/distributed_alignment/cli.py`
+- Update `tests/test_scaffolding.py` or create `tests/test_config.py`
+
+---
