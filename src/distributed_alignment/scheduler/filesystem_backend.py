@@ -168,7 +168,27 @@ class FileSystemWorkStack:
                 continue
 
             # Rename succeeded — we own this package
-            package = WorkPackage(**json.loads(dst_path.read_text()))
+            try:
+                package = WorkPackage(
+                    **json.loads(dst_path.read_text())
+                )
+            except (json.JSONDecodeError, Exception) as exc:
+                # Corrupt JSON — move to poisoned/ so it doesn't
+                # block the queue
+                poisoned_path = self._dir_for(
+                    WorkPackageState.POISONED
+                ) / dst_path.name
+                try:
+                    os.rename(dst_path, poisoned_path)
+                except OSError:
+                    dst_path.unlink(missing_ok=True)
+                logger.error(
+                    "corrupt_work_package",
+                    path=str(dst_path),
+                    error=str(exc),
+                )
+                continue
+
             now = datetime.now(tz=UTC)
 
             self._log_transition(

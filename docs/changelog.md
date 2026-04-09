@@ -458,5 +458,8 @@ Multiple workarounds were tried and failed:
 - The polling loop with backoff elegantly resolves the timing dependency between the reaper and worker identified in Task 2.2. Workers no longer exit on the first empty `claim()` — they keep polling, giving the reaper time to reclaim stale packages.
 - macOS's `spawn` multiprocessing requires all process targets and arguments to be picklable. This is a stronger constraint than Linux's `fork` (where the child inherits the parent's memory). Designing `run_worker_process()` with only primitive arguments ensures cross-platform compatibility.
 - `multiprocessing.Process` with independent work stacks (all accessing the same filesystem directory) gives true parallelism without shared-memory coordination. The filesystem's atomic `os.rename()` is the only synchronisation mechanism.
+**Bug found and fixed**:
+- **Corrupt JSON crash in `claim()`**: `FileSystemWorkStack.claim()` renamed a file from `pending/` to `running/` then tried to parse it (`WorkPackage(**json.loads(...))`). If the JSON was corrupt (invalid syntax or wrong schema), the parse raised an unhandled exception and the corrupt file got stuck in `running/` forever — blocking the queue.
+- **Fix**: Wrapped the JSON parse in `try/except`. On parse failure, the corrupt file is moved to `poisoned/` (so it's visible for investigation) and the worker continues to the next candidate. Logged as `corrupt_work_package` at ERROR level.
 
 **Status**: Complete
