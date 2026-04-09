@@ -285,3 +285,26 @@ Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could b
 - Update `tests/test_scaffolding.py` or create `tests/test_config.py`
 
 ---
+
+### Task 2.1: Heartbeat mechanism
+
+**What**: Workers send periodic heartbeats while processing a work package. The work stack tracks the last heartbeat timestamp per running package.
+
+**Key behaviours**:
+- `WorkerRunner` starts a background thread that calls `work_stack.heartbeat(package_id)` every N seconds while a package is being processed
+- `heartbeat()` updates the `heartbeat_at` timestamp in the work package JSON
+- The heartbeat thread starts when a package is claimed and stops when it's completed or failed
+- Thread-safe: the heartbeat thread and the main worker thread both access the work package file
+
+**Files**:
+- Update `src/distributed_alignment/worker/runner.py`
+- Update `src/distributed_alignment/scheduler/filesystem_backend.py` (heartbeat method may need implementation)
+- `tests/test_heartbeat.py`
+
+**Tests**:
+- Worker processing a package updates heartbeat_at periodically
+- heartbeat_at is more recent than claimed_at after processing starts
+- Heartbeat thread stops cleanly when package completes
+- Heartbeat thread stops cleanly when package fails
+
+---

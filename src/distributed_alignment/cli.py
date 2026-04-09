@@ -244,6 +244,7 @@ def run(
         sensitivity=effective_sensitivity,
         max_target_seqs=effective_top_n,
         timeout=cfg.diamond_timeout,
+        heartbeat_interval=cfg.heartbeat_interval,
     )
 
     typer.echo("Starting alignment...")

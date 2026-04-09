@@ -378,3 +378,30 @@ Multiple workarounds were tried and failed:
 - Pydantic Settings' TOML file discovery is cwd-relative and class-level. For runtime configuration of which file to read, temporary `chdir()` is the simplest workaround. An alternative would be a factory method that creates a subclass with a different `toml_file`, but that's over-engineered for this use case.
 
 **Status**: Complete
+
+---
+
+### Task 2.1: Heartbeat mechanism — 2026-04-09
+
+**What was done**:
+- Made `FileSystemWorkStack.heartbeat()` thread-safe: catches `FileNotFoundError` when the package has been completed/failed by the main thread while the heartbeat is in flight. Logs a debug message instead of crashing.
+- Created `HeartbeatSender` context manager in `worker/runner.py`: spawns a daemon thread that calls `work_stack.heartbeat(package_id)` every `interval` seconds. Stops cleanly on context exit via `threading.Event`. Catches and logs exceptions in the heartbeat call rather than crashing the worker.
+- Integrated `HeartbeatSender` into `WorkerRunner.run()`: each claimed package is processed inside a `with HeartbeatSender(...)` block. The heartbeat starts after the package is claimed (state is RUNNING) and stops when processing completes/fails.
+- Added `heartbeat_interval` parameter to `WorkerRunner.__init__` (default 30.0 seconds). Wired from `cfg.heartbeat_interval` in the CLI's `run` command.
+- Exported `HeartbeatSender` from `worker/__init__.py`.
+- `tests/test_heartbeat.py` — 7 tests across 3 classes: `heartbeat()` method correctness and thread-safety, `HeartbeatSender` lifecycle (periodic updates, clean shutdown, package completion during heartbeat, exception handling), and `WorkerRunner` integration with a slow mock DIAMOND.
+
+**Decisions made**:
+- `HeartbeatSender` uses `threading.Event.wait(timeout=interval)` for the sleep loop. This is cleaner than `time.sleep()` + checking a flag — the event wakes the thread immediately when `stop()` is called, rather than waiting for the current sleep to finish.
+- The heartbeat thread is a daemon thread. If the main process crashes without calling `__exit__`, the daemon thread dies with it — no orphaned threads.
+- On heartbeat exception (any `Exception`), the thread logs the error and exits. This prevents a broken heartbeat from retrying indefinitely. The package will eventually be reaped by the stale heartbeat reaper (Task 2.2).
+- The heartbeat thread doesn't update any shared state with the main thread — it only writes to the filesystem (the work package JSON in `running/`). The main thread reads/moves the same file. Thread safety comes from the filesystem: if the file has been moved, `FileNotFoundError` is caught.
+
+**Problems encountered**:
+- None significant. The `threading.Event.wait(timeout=)` pattern worked cleanly on the first try. The integration test with the slow mock (0.3s DIAMOND delay, 0.05s heartbeat interval) reliably confirms the heartbeat fires during processing.
+
+**Learnings**:
+- `threading.Event.wait(timeout=interval)` is the idiomatic way to implement a stoppable periodic loop in Python. It combines sleeping and checking the stop signal in a single atomic call, and wakes immediately when the event is set.
+- Context managers (`__enter__`/`__exit__`) are the right pattern for thread lifecycle — the caller doesn't need to remember to call `stop()`, and exception paths are handled automatically.
+
+**Status**: Complete

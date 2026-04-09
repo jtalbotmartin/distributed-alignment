@@ -267,15 +267,25 @@ class FileSystemWorkStack:
     def heartbeat(self, package_id: str) -> None:
         """Update the heartbeat timestamp for a running package.
 
+        Safe to call concurrently — if the package has been moved
+        (completed/failed) by the main thread, logs a debug message
+        and returns without error.
+
         Args:
             package_id: ID of the package to heartbeat.
         """
         path = self._package_path(package_id, WorkPackageState.RUNNING)
-        package = WorkPackage(**json.loads(path.read_text()))
-        package.heartbeat_at = datetime.now(tz=UTC)
-        path.write_text(
-            json.dumps(package.model_dump(mode="json"), indent=2)
-        )
+        try:
+            package = WorkPackage(**json.loads(path.read_text()))
+            package.heartbeat_at = datetime.now(tz=UTC)
+            path.write_text(
+                json.dumps(package.model_dump(mode="json"), indent=2)
+            )
+        except FileNotFoundError:
+            logger.debug(
+                "heartbeat_skipped_package_moved",
+                package_id=package_id,
+            )
 
     def reap_stale(self, timeout_seconds: int) -> list[str]:
         """Reclaim running packages with stale heartbeats.

@@ -5,11 +5,16 @@ from distributed_alignment.worker.diamond_wrapper import (
     DiamondWrapper,
     parse_output,
 )
-from distributed_alignment.worker.runner import WorkerRunner, parquet_chunk_to_fasta
+from distributed_alignment.worker.runner import (
+    HeartbeatSender,
+    WorkerRunner,
+    parquet_chunk_to_fasta,
+)
 
 __all__ = [
     "DiamondResult",
     "DiamondWrapper",
+    "HeartbeatSender",
     "WorkerRunner",
     "parquet_chunk_to_fasta",
     "parse_output",

@@ -6,6 +6,7 @@ DiamondWrapper, writes result Parquet, and marks packages complete.
 
 from __future__ import annotations
 
+import threading
 import uuid
 from typing import TYPE_CHECKING
 
@@ -19,6 +20,7 @@ from distributed_alignment.worker.diamond_wrapper import (
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from types import TracebackType
 
     from distributed_alignment.models import WorkPackage
     from distributed_alignment.scheduler.filesystem_backend import (
@@ -57,6 +59,75 @@ def parquet_chunk_to_fasta(parquet_path: Path, fasta_path: Path) -> int:
     return count
 
 
+class HeartbeatSender:
+    """Context manager that sends periodic heartbeats in a background thread.
+
+    Usage::
+
+        with HeartbeatSender(work_stack, "wp_q000_r000", interval=30):
+            do_long_running_work()
+
+    The heartbeat thread is a daemon thread that stops cleanly when the
+    context exits (success, failure, or exception). Errors in the heartbeat
+    call are logged but don't kill the worker.
+    """
+
+    def __init__(
+        self,
+        work_stack: FileSystemWorkStack,
+        package_id: str,
+        *,
+        interval: float = 30.0,
+    ) -> None:
+        self._work_stack = work_stack
+        self._package_id = package_id
+        self._interval = interval
+        self._stop_event = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def __enter__(self) -> HeartbeatSender:
+        self._stop_event.clear()
+        self._thread = threading.Thread(
+            target=self._run,
+            daemon=True,
+            name=f"heartbeat-{self._package_id}",
+        )
+        self._thread.start()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.stop()
+
+    def stop(self) -> None:
+        """Signal the heartbeat thread to stop and wait for it."""
+        self._stop_event.set()
+        if self._thread is not None:
+            self._thread.join(timeout=self._interval + 1)
+
+    @property
+    def is_alive(self) -> bool:
+        """Whether the heartbeat thread is still running."""
+        return self._thread is not None and self._thread.is_alive()
+
+    def _run(self) -> None:
+        """Heartbeat loop — runs in background thread."""
+        while not self._stop_event.wait(timeout=self._interval):
+            try:
+                self._work_stack.heartbeat(self._package_id)
+            except Exception:
+                logger.debug(
+                    "heartbeat_error",
+                    package_id=self._package_id,
+                    exc_info=True,
+                )
+                return
+
+
 class WorkerRunner:
     """Main worker loop: claim → align → write → complete → repeat.
 
@@ -80,6 +151,7 @@ class WorkerRunner:
         sensitivity: str = "very-sensitive",
         max_target_seqs: int = 50,
         timeout: int = 3600,
+        heartbeat_interval: float = 30.0,
     ) -> None:
         self._work_stack = work_stack
         self._diamond = diamond
@@ -88,6 +160,7 @@ class WorkerRunner:
         self._sensitivity = sensitivity
         self._max_target_seqs = max_target_seqs
         self._timeout = timeout
+        self._heartbeat_interval = heartbeat_interval
         self._worker_id = f"worker-{uuid.uuid4().hex[:8]}"
 
         self._results_dir.mkdir(parents=True, exist_ok=True)
@@ -121,7 +194,12 @@ class WorkerRunner:
             if package is None:
                 break
 
-            success = self._process_package(package)
+            with HeartbeatSender(
+                self._work_stack,
+                package.package_id,
+                interval=self._heartbeat_interval,
+            ):
+                success = self._process_package(package)
             if success:
                 completed += 1
 
