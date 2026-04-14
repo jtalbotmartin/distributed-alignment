@@ -521,4 +521,27 @@ Multiple workarounds were tried and failed:
 - Making Ray optional via `[project.optional-dependencies]` is the right pattern — it keeps the core pipeline lightweight and only pulls in Ray's large dependency tree when explicitly needed.
 - The `_try_import_ray()` pattern (lazy import with clear error) is cleaner than a top-level import that crashes on `ImportError`.
 
-**Status**: **Complete**
+**Status**: Complete
+
+---
+
+### Ray Docker testing fix — 2026-04-14
+
+**What was done**:
+- Updated `Dockerfile.dev` to install Ray via `uv pip install "ray[default]>=2.9"` (the `--extra ray` flag didn't work with `package = false`).
+- Fixed `ray_actor.py`: changed `os.environ["RAY_RUNTIME_ENV_HOOK"] = ""` to `os.environ.pop("RAY_RUNTIME_ENV_HOOK", None)` — setting to empty string caused `ValueError`, needs to be deleted.
+- Updated `docker-compose.yml` to use `.venv/bin/python -m pytest` instead of `uv run pytest`. The `uv run` command sets `RAY_RUNTIME_ENV_HOOK` which interferes with Ray worker process startup and can't be reliably removed at runtime.
+- Added `_clear_ray_hook` autouse fixture in `test_ray_worker.py`.
+- Fixed `test_ray_worker.py` integration tests to use real DIAMOND (mocks can't be sent to Ray actor processes — they're separate processes that can't receive non-picklable objects).
+
+**Docker test results**: 205 tests total — 204 passed + 1 timing flake (passes on re-run). All 7 Ray tests pass with real DIAMOND in Docker, including:
+- 2 actors processing 4 packages → all completed
+- Concurrent execution verification
+- Actor error handling with bad config
+
+**Root cause of previous hangs**: `uv run` injects `RAY_RUNTIME_ENV_HOOK` env var. Ray's worker subprocesses inherit this, causing them to try to use uv's runtime env hook which then fails. The fix: bypass `uv run` for Ray tests by using the venv's Python directly.
+
+- Added `make test-docker` target — builds the Docker image and runs the full suite (DIAMOND + Ray) in one command. Also added `make docker-build` as a standalone build target.
+- Updated `README.md` with current test commands, multi-worker/Ray usage, and Phase 2 status.
+
+**Status**: Complete

@@ -16,4 +16,6 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     working_dir: /app
-    command: ["uv", "run", "pytest", "tests/", "-v"]
+    environment:
+      - PYTHONPATH=src
+    command: [".venv/bin/python", "-m", "pytest", "tests/", "-v"]

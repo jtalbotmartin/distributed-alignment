@@ -22,6 +22,7 @@ Phase 1 (Core Pipeline MVP) complete. See [`docs/task-tracker.md`](docs/task-tra
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) for dependency management
 - [DIAMOND](https://github.com/bbuchfink/diamond/wiki) for alignment (or use Docker)
+- Docker (for Ray tests and full reproducibility)
 - GNU Make (optional, for shortcut commands)
 
 ### Setup
@@ -47,20 +48,25 @@ PYTHONPATH=src uv run python -m distributed_alignment run --work-dir work/
 PYTHONPATH=src uv run python -m distributed_alignment status --work-dir work/
 ```
 
+Multi-worker and Ray backend:
+```bash
+# Local multiprocessing (4 workers)
+make run ARGS="--work-dir work/ --workers 4"
+
+# Ray backend (requires ray: uv add 'distributed-alignment[ray]')
+make run ARGS="--work-dir work/ --workers 4 --backend ray"
+```
+
 ### Running tests
 
 ```bash
-make test               # Unit tests (no DIAMOND needed)
-make test-integration   # Integration tests (requires DIAMOND)
-make test-all           # Everything
+make test               # Unit tests only (no DIAMOND, no Ray)
+make test-integration   # Integration tests (requires DIAMOND locally)
+make test-all           # All local tests (unit + integration)
+make test-docker        # Full suite in Docker (DIAMOND + Ray, recommended)
 make lint               # Ruff + mypy --strict
 ```
 
-**Or via Docker (no local DIAMOND needed):**
-
-```bash
-docker-compose build dev
-docker-compose run --rm dev uv run pytest tests/ -v
-```
+`make test-docker` builds the dev Docker image (includes DIAMOND and Ray) and runs the complete test suite (~205 tests). This is the most reliable way to run all tests, including Ray integration tests which require Docker due to `uv run` / Ray environment conflicts.
 
 Run `make help` to see all available commands.

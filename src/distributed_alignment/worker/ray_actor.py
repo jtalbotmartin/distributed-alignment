@@ -156,9 +156,9 @@ def run_ray_workers(
     try:
         import os
 
-        # Disable Ray's uv runtime env hook which conflicts with
-        # uv run invocations
-        os.environ["RAY_RUNTIME_ENV_HOOK"] = ""
+        # Remove Ray's uv runtime env hook which conflicts with
+        # uv run invocations. Must be deleted (not set empty).
+        os.environ.pop("RAY_RUNTIME_ENV_HOOK", None)
 
         # Set PYTHONPATH for Ray workers to find src/
         src_path = os.path.join(os.getcwd(), "src")

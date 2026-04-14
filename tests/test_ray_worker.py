@@ -36,6 +36,19 @@ from distributed_alignment.worker.ray_actor import (  # noqa: E402
 AMINO = "ACDEFGHIKLMNPQRSTVWY"
 
 
+@pytest.fixture(autouse=True)
+def _clear_ray_hook() -> None:
+    """Remove Ray's uv runtime env hook before each test.
+
+    When tests run via ``uv run pytest``, uv sets
+    ``RAY_RUNTIME_ENV_HOOK`` which interferes with ``ray.init()``.
+    Must be cleared before Ray starts.
+    """
+    import os
+
+    os.environ.pop("RAY_RUNTIME_ENV_HOOK", None)
+
+
 def _make_sequences(n: int) -> list[ProteinSequence]:
     return [
         ProteinSequence(

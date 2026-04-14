@@ -1,9 +1,9 @@
-# Minimal dev container for running tests with DIAMOND.
-# Not the production Dockerfile (Phase 4) — just enough for pytest -m integration.
+# Dev container for running tests with DIAMOND and Ray.
+# Not the production Dockerfile (Phase 4) — just enough for all tests.
 #
 # Usage via docker-compose:
-#   docker-compose run dev uv run pytest tests/ -v
-#   docker-compose run dev uv run pytest tests/ -m integration
+#   docker-compose run dev uv run pytest tests/ -v                  # all unit tests
+#   docker-compose run dev uv run pytest tests/ -m integration -v   # integration tests
 #
 # Works on both x86_64 and arm64 (Apple Silicon) via conda-forge.
 
@@ -37,14 +37,15 @@ WORKDIR /app
 COPY pyproject.toml ./
 COPY src/distributed_alignment/__init__.py src/distributed_alignment/__init__.py
 
-# Sync dependencies (without the full source, just enough to cache the layer)
+# Sync dependencies including Ray optional extra
 RUN uv sync --no-dev --no-install-project 2>/dev/null || true
 
 # Copy the rest of the project
 COPY . .
 
-# Full sync with dev dependencies
-RUN uv sync
+# Full sync with dev dependencies + Ray
+# --extra doesn't work with package=false, so install Ray directly
+RUN uv sync && uv pip install "ray[default]>=2.9"
 
 # Default command
 CMD ["uv", "run", "pytest", "tests/", "-v"]
