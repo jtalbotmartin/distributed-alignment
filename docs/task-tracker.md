@@ -379,3 +379,26 @@ Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could b
 **Tests**: All marked `@pytest.mark.integration` (they need real multi-process execution and potentially DIAMOND).
 
 ---
+
+### Task 2.5: Ray integration
+
+**What**: Replace multiprocessing with Ray for worker management. Ray provides task-level fault tolerance, resource management, and a foundation for elastic scaling on K8s.
+
+**Key behaviours**:
+- `AlignmentWorker` as a Ray actor with configurable CPU/memory resources
+- `distributed-alignment run --workers N --backend ray` uses Ray; `--backend local` uses multiprocessing (default)
+- Ray in local mode for development (no cluster needed); Ray on a cluster for production
+- The WorkerRunner logic is unchanged — Ray just manages where and how many instances run
+- Ray dashboard available at localhost:8265 when running
+
+**Files**:
+- `src/distributed_alignment/worker/ray_actor.py`
+- Update `src/distributed_alignment/cli.py` (Ray backend option)
+- Update `pyproject.toml` (add ray dependency)
+- `tests/test_ray_worker.py`
+
+**Tests**:
+- Ray actor processes packages correctly (same results as multiprocessing)
+- Multiple Ray actors process packages concurrently without conflicts
+- Ray actor failure → Ray restarts it → package is reclaimed
+- Mark Ray tests as `@pytest.mark.integration` (Ray adds significant startup time)

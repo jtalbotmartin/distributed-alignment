@@ -13,6 +13,8 @@ from distributed_alignment.worker.runner import (
     run_worker_process,
 )
 
+# ray_actor is imported lazily (ray may not be installed)
+
 __all__ = [
     "DiamondResult",
     "DiamondWrapper",

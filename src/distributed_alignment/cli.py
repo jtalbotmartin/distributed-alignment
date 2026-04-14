@@ -149,6 +149,10 @@ def run(
         int | None,
         typer.Option(help="Maximum hits per query after merging"),
     ] = None,
+    backend: Annotated[
+        str | None,
+        typer.Option(help="Execution backend: local or ray"),
+    ] = None,
 ) -> None:
     """Run the alignment pipeline."""
     from distributed_alignment.config import load_config
@@ -159,7 +163,6 @@ def run(
         FileSystemWorkStack,
     )
     from distributed_alignment.worker.diamond_wrapper import DiamondWrapper
-    from distributed_alignment.worker.runner import WorkerRunner
 
     cfg = load_config(
         work_dir=work_dir,
@@ -167,6 +170,7 @@ def run(
             "num_workers": workers,
             "diamond_sensitivity": sensitivity,
             "diamond_max_target_seqs": top_n,
+            "backend": backend,
         },
     )
 
@@ -176,6 +180,7 @@ def run(
     effective_sensitivity = cfg.diamond_sensitivity
     effective_top_n = cfg.diamond_max_target_seqs
     effective_workers = cfg.num_workers
+    effective_backend = cfg.backend
 
     # Read manifests
     q_manifest_path = work_path / "query_manifest.json"
@@ -229,67 +234,34 @@ def run(
     chunks_dir = work_path / "chunks"
     results_dir = work_path / "results"
 
-    if effective_workers <= 1:
-        # Single worker — no multiprocessing overhead
-        runner = WorkerRunner(
-            stack,
-            diamond,
-            chunks_dir,
-            results_dir,
-            sensitivity=effective_sensitivity,
-            max_target_seqs=effective_top_n,
-            timeout=cfg.diamond_timeout,
-            heartbeat_interval=cfg.heartbeat_interval,
-            heartbeat_timeout=cfg.heartbeat_timeout,
-            reaper_interval=cfg.reaper_interval,
+    worker_config = {
+        "work_stack_dir": str(work_stack_dir),
+        "chunks_dir": str(chunks_dir),
+        "results_dir": str(results_dir),
+        "diamond_binary": cfg.diamond_binary,
+        "sensitivity": effective_sensitivity,
+        "max_target_seqs": effective_top_n,
+        "timeout": cfg.diamond_timeout,
+        "heartbeat_interval": cfg.heartbeat_interval,
+        "heartbeat_timeout": cfg.heartbeat_timeout,
+        "reaper_interval": cfg.reaper_interval,
+        "log_level": cfg.log_level,
+        "run_id": run_id,
+    }
+
+    if effective_backend == "ray":
+        _run_ray_backend(
+            worker_config, effective_workers
         )
-        typer.echo("Starting alignment (1 worker)...")
-        runner.run()
+    elif effective_workers <= 1:
+        _run_single_worker(
+            stack, diamond, chunks_dir, results_dir, cfg,
+            effective_sensitivity, effective_top_n,
+        )
     else:
-        import multiprocessing
-
-        from distributed_alignment.worker.runner import (
-            run_worker_process,
+        _run_multiprocess_backend(
+            worker_config, effective_workers
         )
-
-        typer.echo(
-            f"Starting alignment ({effective_workers} workers)..."
-        )
-
-        worker_kwargs = {
-            "work_stack_dir": str(work_stack_dir),
-            "chunks_dir": str(chunks_dir),
-            "results_dir": str(results_dir),
-            "diamond_binary": cfg.diamond_binary,
-            "sensitivity": effective_sensitivity,
-            "max_target_seqs": effective_top_n,
-            "timeout": cfg.diamond_timeout,
-            "heartbeat_interval": cfg.heartbeat_interval,
-            "heartbeat_timeout": cfg.heartbeat_timeout,
-            "reaper_interval": cfg.reaper_interval,
-            "log_level": cfg.log_level,
-            "run_id": run_id,
-        }
-
-        processes: list[multiprocessing.Process] = []
-        for i in range(effective_workers):
-            p = multiprocessing.Process(
-                target=run_worker_process,
-                kwargs=worker_kwargs,
-                name=f"worker-{i}",
-            )
-            p.start()
-            processes.append(p)
-
-        # Wait for all workers to finish
-        for p in processes:
-            p.join()
-            if p.exitcode and p.exitcode != 0:
-                typer.echo(
-                    f"Warning: {p.name} exited with "
-                    f"code {p.exitcode}",
-                    err=True,
-                )
 
     # Merge results per query chunk
     merged_dir = work_path / "merged"
@@ -323,6 +295,120 @@ def run(
             err=True,
         )
         raise typer.Exit(code=1)
+
+
+def _run_single_worker(
+    stack: object,
+    diamond: object,
+    chunks_dir: Path,
+    results_dir: Path,
+    cfg: object,
+    sensitivity: str,
+    top_n: int,
+) -> None:
+    """Run a single in-process worker (no multiprocessing)."""
+    from distributed_alignment.config import DistributedAlignmentConfig
+    from distributed_alignment.scheduler.filesystem_backend import (
+        FileSystemWorkStack as _Stack,
+    )
+    from distributed_alignment.worker.diamond_wrapper import (
+        DiamondWrapper as _Diamond,
+    )
+    from distributed_alignment.worker.runner import WorkerRunner
+
+    assert isinstance(stack, _Stack)
+    assert isinstance(diamond, _Diamond)
+    assert isinstance(cfg, DistributedAlignmentConfig)
+
+    runner = WorkerRunner(
+        stack,
+        diamond,
+        chunks_dir,
+        results_dir,
+        sensitivity=sensitivity,
+        max_target_seqs=top_n,
+        timeout=cfg.diamond_timeout,
+        heartbeat_interval=cfg.heartbeat_interval,
+        heartbeat_timeout=cfg.heartbeat_timeout,
+        reaper_interval=cfg.reaper_interval,
+    )
+    typer.echo("Starting alignment (1 worker, local)...")
+    runner.run()
+
+
+def _run_multiprocess_backend(
+    worker_config: dict[str, object],
+    num_workers: int,
+) -> None:
+    """Spawn N worker processes via multiprocessing."""
+    import multiprocessing
+
+    from distributed_alignment.worker.runner import (
+        run_worker_process,
+    )
+
+    typer.echo(
+        f"Starting alignment "
+        f"({num_workers} workers, local)..."
+    )
+
+    processes: list[multiprocessing.Process] = []
+    for i in range(num_workers):
+        p = multiprocessing.Process(
+            target=run_worker_process,
+            kwargs=worker_config,
+            name=f"worker-{i}",
+        )
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
+        if p.exitcode and p.exitcode != 0:
+            typer.echo(
+                f"Warning: {p.name} exited with "
+                f"code {p.exitcode}",
+                err=True,
+            )
+
+
+def _run_ray_backend(
+    worker_config: dict[str, object],
+    num_workers: int,
+) -> None:
+    """Spawn N Ray actors for alignment."""
+    try:
+        from distributed_alignment.worker.ray_actor import (
+            run_ray_workers,
+        )
+    except ImportError:
+        typer.echo(
+            "Error: Ray is not installed. "
+            "Install with: uv add 'distributed-alignment[ray]'",
+            err=True,
+        )
+        raise typer.Exit(code=1) from None
+
+    typer.echo(
+        f"Starting alignment "
+        f"({num_workers} workers, Ray)..."
+    )
+
+    results = run_ray_workers(
+        worker_config, num_workers=num_workers
+    )
+
+    for r in results:
+        wid = r.get("worker_id", "unknown")
+        completed = r.get("packages_completed", 0)
+        error = r.get("error")
+        if error:
+            typer.echo(
+                f"Warning: {wid} errored: {error}",
+                err=True,
+            )
+        else:
+            typer.echo(f"  {wid}: {completed} packages")
 
 
 @app.command()
