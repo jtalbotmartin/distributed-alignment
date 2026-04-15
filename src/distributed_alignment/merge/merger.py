@@ -182,9 +182,7 @@ def merge_query_chunk(
         arrow_table = result.arrow().read_all()
 
         # Count stats for logging
-        total_before = con.execute(
-            f"SELECT COUNT(*) FROM ({union_sql})"
-        ).fetchone()
+        total_before = con.execute(f"SELECT COUNT(*) FROM ({union_sql})").fetchone()
         total_before_count = total_before[0] if total_before else 0
 
         dedup_count = con.execute(

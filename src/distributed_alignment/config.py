@@ -3,6 +3,8 @@
 Layered precedence: defaults → config file → env vars (DA_ prefix) → CLI args.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Literal
 
@@ -66,6 +68,10 @@ class DistributedAlignmentConfig(BaseSettings):
     heartbeat_interval: int = 30
     heartbeat_timeout: int = 120
     max_attempts: int = 3
+    backend: Literal["local", "ray"] = "local"
+
+    # Reaper
+    reaper_interval: int = 60
 
     # Paths
     work_dir: Path = Path("./work")
@@ -78,3 +84,49 @@ class DistributedAlignmentConfig(BaseSettings):
     metrics_port: int = 9090
     enable_cost_tracking: bool = True
     cost_per_cpu_hour: float = 0.0464
+
+
+def load_config(
+    *,
+    work_dir: Path | None = None,
+    overrides: dict[str, object] | None = None,
+) -> DistributedAlignmentConfig:
+    """Load configuration with TOML file discovery.
+
+    Searches for ``distributed_alignment.toml`` in the given work
+    directory, then falls back to the current working directory.
+    Environment variables (``DA_*``) override TOML values.
+    Explicit overrides (from CLI flags) take highest priority.
+
+    Args:
+        work_dir: Directory to search for the TOML config file.
+            Falls back to cwd if not provided or file not found.
+        overrides: Dict of field names to values from CLI flags.
+            Only non-None values are applied.
+
+    Returns:
+        Fully resolved configuration.
+    """
+    import os
+
+    init_kwargs: dict[str, object] = {}
+    if overrides:
+        init_kwargs = {k: v for k, v in overrides.items() if v is not None}
+
+    # pydantic-settings TomlConfigSettingsSource reads from cwd.
+    # If work_dir has a TOML file, temporarily chdir so it's found.
+    toml_dir: Path | None = None
+    if work_dir is not None:
+        candidate = work_dir / "distributed_alignment.toml"
+        if candidate.exists():
+            toml_dir = work_dir
+
+    original_dir = os.getcwd()
+    try:
+        if toml_dir is not None:
+            os.chdir(toml_dir)
+        config = DistributedAlignmentConfig(**init_kwargs)  # type: ignore[arg-type]
+    finally:
+        os.chdir(original_dir)
+
+    return config

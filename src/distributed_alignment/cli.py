@@ -1,13 +1,15 @@
 """CLI entry point for distributed-alignment.
 
 Uses Typer for command-line interface with subcommands for each pipeline stage.
+CLI flags default to None so that config file and env var values are used
+unless the user explicitly passes a flag.
 """
 
 from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path  # noqa: TCH003 — Typer needs Path at runtime
 from typing import Annotated
 
 import typer
@@ -35,23 +37,27 @@ def ingest(
         typer.Option(help="Path to reference FASTA file", exists=True),
     ],
     output_dir: Annotated[
-        Path,
+        Path | None,
         typer.Option(help="Output directory for chunks and manifests"),
-    ] = Path("./work"),
+    ] = None,
     chunk_size: Annotated[
-        int,
+        int | None,
         typer.Option(help="Target number of sequences per chunk"),
-    ] = 50_000,
+    ] = None,
 ) -> None:
     """Ingest and chunk FASTA files for alignment."""
+    from distributed_alignment.config import load_config
     from distributed_alignment.ingest.chunker import chunk_sequences
     from distributed_alignment.ingest.fasta_parser import parse_fasta
     from distributed_alignment.observability.logging import configure_logging
 
-    run_id = _generate_run_id()
-    configure_logging(level="INFO", run_id=run_id, json_output=False)
+    cfg = load_config(overrides={"chunk_size": chunk_size})
 
-    output_path = output_dir.resolve()
+    effective_output = output_dir.resolve() if output_dir else cfg.work_dir.resolve()
+    effective_chunk_size = cfg.chunk_size
+
+    run_id = _generate_run_id()
+    configure_logging(level=cfg.log_level, run_id=run_id, json_output=False)
 
     # Count sequences to determine chunk count
     typer.echo(f"Counting query sequences from {queries}...")
@@ -59,12 +65,18 @@ def ingest(
     typer.echo(f"Counting reference sequences from {reference}...")
     r_count = sum(1 for _ in parse_fasta(reference))
 
-    q_num_chunks = max(1, q_count // chunk_size + (1 if q_count % chunk_size else 0))
-    r_num_chunks = max(1, r_count // chunk_size + (1 if r_count % chunk_size else 0))
+    q_num_chunks = max(
+        1,
+        q_count // effective_chunk_size + (1 if q_count % effective_chunk_size else 0),
+    )
+    r_num_chunks = max(
+        1,
+        r_count // effective_chunk_size + (1 if r_count % effective_chunk_size else 0),
+    )
 
     # Chunk queries
     typer.echo(f"Chunking {q_count} queries into {q_num_chunks} chunks...")
-    q_chunks_dir = output_path / "chunks" / "queries"
+    q_chunks_dir = effective_output / "chunks" / "queries"
     q_manifest = chunk_sequences(
         parse_fasta(queries),
         num_chunks=q_num_chunks,
@@ -76,7 +88,7 @@ def ingest(
 
     # Chunk references
     typer.echo(f"Chunking {r_count} references into {r_num_chunks} chunks...")
-    r_chunks_dir = output_path / "chunks" / "references"
+    r_chunks_dir = effective_output / "chunks" / "references"
     r_manifest = chunk_sequences(
         parse_fasta(reference),
         num_chunks=r_num_chunks,
@@ -87,42 +99,43 @@ def ingest(
     )
 
     # Write manifests
-    q_manifest_path = output_path / "query_manifest.json"
-    r_manifest_path = output_path / "ref_manifest.json"
-    q_manifest_path.write_text(
-        json.dumps(q_manifest.model_dump(mode="json"), indent=2)
-    )
-    r_manifest_path.write_text(
-        json.dumps(r_manifest.model_dump(mode="json"), indent=2)
-    )
+    q_manifest_path = effective_output / "query_manifest.json"
+    r_manifest_path = effective_output / "ref_manifest.json"
+    q_manifest_path.write_text(json.dumps(q_manifest.model_dump(mode="json"), indent=2))
+    r_manifest_path.write_text(json.dumps(r_manifest.model_dump(mode="json"), indent=2))
 
     typer.echo("")
     typer.echo(f"Ingestion complete (run_id: {run_id})")
     typer.echo(f"  Queries:    {q_count} sequences → {len(q_manifest.chunks)} chunks")
     typer.echo(f"  References: {r_count} sequences → {len(r_manifest.chunks)} chunks")
-    typer.echo(f"  Output:     {output_path}")
+    typer.echo(f"  Output:     {effective_output}")
 
 
 @app.command()
 def run(
     work_dir: Annotated[
-        Path,
-        typer.Option(help="Working directory containing chunks and manifests"),
-    ] = Path("./work"),
+        Path | None,
+        typer.Option(help="Working directory with chunks and manifests"),
+    ] = None,
     workers: Annotated[
-        int,
-        typer.Option(help="Number of workers (only 1 supported in Phase 1)"),
-    ] = 1,
+        int | None,
+        typer.Option(help="Number of workers"),
+    ] = None,
     sensitivity: Annotated[
-        str,
+        str | None,
         typer.Option(help="DIAMOND sensitivity mode"),
-    ] = "very-sensitive",
+    ] = None,
     top_n: Annotated[
-        int,
+        int | None,
         typer.Option(help="Maximum hits per query after merging"),
-    ] = 50,
+    ] = None,
+    backend: Annotated[
+        str | None,
+        typer.Option(help="Execution backend: local or ray"),
+    ] = None,
 ) -> None:
     """Run the alignment pipeline."""
+    from distributed_alignment.config import load_config
     from distributed_alignment.merge.merger import merge_query_chunk
     from distributed_alignment.models import ChunkManifest
     from distributed_alignment.observability.logging import configure_logging
@@ -130,9 +143,22 @@ def run(
         FileSystemWorkStack,
     )
     from distributed_alignment.worker.diamond_wrapper import DiamondWrapper
-    from distributed_alignment.worker.runner import WorkerRunner
 
-    work_path = work_dir.resolve()
+    cfg = load_config(
+        work_dir=work_dir,
+        overrides={
+            "num_workers": workers,
+            "diamond_sensitivity": sensitivity,
+            "diamond_max_target_seqs": top_n,
+            "backend": backend,
+        },
+    )
+
+    work_path = work_dir.resolve() if work_dir else cfg.work_dir.resolve()
+    effective_sensitivity = cfg.diamond_sensitivity
+    effective_top_n = cfg.diamond_max_target_seqs
+    effective_workers = cfg.num_workers
+    effective_backend = cfg.backend
 
     # Read manifests
     q_manifest_path = work_path / "query_manifest.json"
@@ -149,17 +175,10 @@ def run(
     r_manifest = ChunkManifest(**json.loads(r_manifest_path.read_text()))
 
     run_id = q_manifest.run_id
-    configure_logging(level="INFO", run_id=run_id, json_output=False)
-
-    if workers > 1:
-        typer.echo(
-            f"Warning: only 1 worker supported in Phase 1 (requested {workers}). "
-            f"Using 1 worker.",
-            err=True,
-        )
+    configure_logging(level=cfg.log_level, run_id=run_id, json_output=False)
 
     # Check DIAMOND is available
-    diamond = DiamondWrapper(binary="diamond", threads=1)
+    diamond = DiamondWrapper(binary=cfg.diamond_binary, threads=1)
     if not diamond.check_available():
         typer.echo(
             "Error: DIAMOND binary not found. Install it or use the Docker container.",
@@ -170,29 +189,51 @@ def run(
     # Generate work packages
     work_stack_dir = work_path / "work_stack"
     stack = FileSystemWorkStack(work_stack_dir)
-    packages = stack.generate_work_packages(q_manifest, r_manifest)
+    packages = stack.generate_work_packages(
+        q_manifest, r_manifest, max_attempts=cfg.max_attempts
+    )
 
     total_packages = len(packages)
     typer.echo(
         f"Generated {total_packages} work packages "
-        f"({len(q_manifest.chunks)} query × {len(r_manifest.chunks)} ref chunks)"
+        f"({len(q_manifest.chunks)} query "
+        f"× {len(r_manifest.chunks)} ref chunks)"
     )
 
-    # Run worker
+    # Run workers
     chunks_dir = work_path / "chunks"
     results_dir = work_path / "results"
 
-    runner = WorkerRunner(
-        stack,
-        diamond,
-        chunks_dir,
-        results_dir,
-        sensitivity=sensitivity,
-        max_target_seqs=top_n,
-    )
+    worker_config = {
+        "work_stack_dir": str(work_stack_dir),
+        "chunks_dir": str(chunks_dir),
+        "results_dir": str(results_dir),
+        "diamond_binary": cfg.diamond_binary,
+        "sensitivity": effective_sensitivity,
+        "max_target_seqs": effective_top_n,
+        "timeout": cfg.diamond_timeout,
+        "heartbeat_interval": cfg.heartbeat_interval,
+        "heartbeat_timeout": cfg.heartbeat_timeout,
+        "reaper_interval": cfg.reaper_interval,
+        "metrics_port": cfg.metrics_port,
+        "log_level": cfg.log_level,
+        "run_id": run_id,
+    }
 
-    typer.echo("Starting alignment...")
-    runner.run()
+    if effective_backend == "ray":
+        _run_ray_backend(worker_config, effective_workers)
+    elif effective_workers <= 1:
+        _run_single_worker(
+            stack,
+            diamond,
+            chunks_dir,
+            results_dir,
+            cfg,
+            effective_sensitivity,
+            effective_top_n,
+        )
+    else:
+        _run_multiprocess_backend(worker_config, effective_workers)
 
     # Merge results per query chunk
     merged_dir = work_path / "merged"
@@ -204,7 +245,7 @@ def run(
             q_chunk.chunk_id,
             results_dir,
             merged_dir,
-            top_n=top_n,
+            top_n=effective_top_n,
             expected_ref_chunks=ref_chunk_ids,
         )
 
@@ -224,23 +265,131 @@ def run(
         raise typer.Exit(code=1)
 
 
+def _run_single_worker(
+    stack: object,
+    diamond: object,
+    chunks_dir: Path,
+    results_dir: Path,
+    cfg: object,
+    sensitivity: str,
+    top_n: int,
+) -> None:
+    """Run a single in-process worker (no multiprocessing)."""
+    from distributed_alignment.config import DistributedAlignmentConfig
+    from distributed_alignment.scheduler.filesystem_backend import (
+        FileSystemWorkStack as _Stack,
+    )
+    from distributed_alignment.worker.diamond_wrapper import (
+        DiamondWrapper as _Diamond,
+    )
+    from distributed_alignment.worker.runner import WorkerRunner
+
+    assert isinstance(stack, _Stack)
+    assert isinstance(diamond, _Diamond)
+    assert isinstance(cfg, DistributedAlignmentConfig)
+
+    runner = WorkerRunner(
+        stack,
+        diamond,
+        chunks_dir,
+        results_dir,
+        sensitivity=sensitivity,
+        max_target_seqs=top_n,
+        timeout=cfg.diamond_timeout,
+        heartbeat_interval=cfg.heartbeat_interval,
+        heartbeat_timeout=cfg.heartbeat_timeout,
+        reaper_interval=cfg.reaper_interval,
+        metrics_port=cfg.metrics_port,
+    )
+    typer.echo("Starting alignment (1 worker, local)...")
+    runner.run()
+
+
+def _run_multiprocess_backend(
+    worker_config: dict[str, object],
+    num_workers: int,
+) -> None:
+    """Spawn N worker processes via multiprocessing."""
+    import multiprocessing
+
+    from distributed_alignment.worker.runner import (
+        run_worker_process,
+    )
+
+    typer.echo(f"Starting alignment ({num_workers} workers, local)...")
+
+    processes: list[multiprocessing.Process] = []
+    for i in range(num_workers):
+        p = multiprocessing.Process(
+            target=run_worker_process,
+            kwargs=worker_config,
+            name=f"worker-{i}",
+        )
+        p.start()
+        processes.append(p)
+
+    for p in processes:
+        p.join()
+        if p.exitcode and p.exitcode != 0:
+            typer.echo(
+                f"Warning: {p.name} exited with code {p.exitcode}",
+                err=True,
+            )
+
+
+def _run_ray_backend(
+    worker_config: dict[str, object],
+    num_workers: int,
+) -> None:
+    """Spawn N Ray actors for alignment."""
+    try:
+        from distributed_alignment.worker.ray_actor import (
+            run_ray_workers,
+        )
+    except ImportError:
+        typer.echo(
+            "Error: Ray is not installed. "
+            "Install with: uv add 'distributed-alignment[ray]'",
+            err=True,
+        )
+        raise typer.Exit(code=1) from None
+
+    typer.echo(f"Starting alignment ({num_workers} workers, Ray)...")
+
+    results = run_ray_workers(worker_config, num_workers=num_workers)
+
+    for r in results:
+        wid = r.get("worker_id", "unknown")
+        completed = r.get("packages_completed", 0)
+        error = r.get("error")
+        if error:
+            typer.echo(
+                f"Warning: {wid} errored: {error}",
+                err=True,
+            )
+        else:
+            typer.echo(f"  {wid}: {completed} packages")
+
+
 @app.command()
 def status(
     work_dir: Annotated[
-        Path,
+        Path | None,
         typer.Option(help="Working directory to check status of"),
-    ] = Path("./work"),
+    ] = None,
 ) -> None:
     """Show pipeline run status."""
     from rich.console import Console
     from rich.table import Table
 
+    from distributed_alignment.config import load_config
     from distributed_alignment.models import ChunkManifest
     from distributed_alignment.scheduler.filesystem_backend import (
         FileSystemWorkStack,
     )
 
-    work_path = work_dir.resolve()
+    cfg = load_config(work_dir=work_dir)
+    work_path = work_dir.resolve() if work_dir else cfg.work_dir.resolve()
     console = Console()
 
     # Read manifests
@@ -263,12 +412,13 @@ def status(
 
     console.print(f"\n[bold]Run:[/bold] {q_manifest.run_id}")
     console.print(
-        f"[bold]Queries:[/bold] {q_manifest.total_sequences} sequences "
-        f"in {len(q_manifest.chunks)} chunks"
+        f"[bold]Queries:[/bold] {q_manifest.total_sequences} "
+        f"sequences in {len(q_manifest.chunks)} chunks"
     )
     if r_manifest:
         console.print(
-            f"[bold]References:[/bold] {r_manifest.total_sequences} sequences "
+            f"[bold]References:[/bold] "
+            f"{r_manifest.total_sequences} sequences "
             f"in {len(r_manifest.chunks)} chunks"
         )
 
@@ -282,7 +432,12 @@ def status(
         table.add_column("State", style="bold")
         table.add_column("Count", justify="right")
 
-        for state_name in ["PENDING", "RUNNING", "COMPLETED", "POISONED"]:
+        for state_name in [
+            "PENDING",
+            "RUNNING",
+            "COMPLETED",
+            "POISONED",
+        ]:
             count = stack_status.get(state_name, 0)
             style = {
                 "PENDING": "yellow",
@@ -304,8 +459,7 @@ def status(
     if merged_dir.exists():
         merged_files = list(merged_dir.glob("merged_*.parquet"))
         console.print(
-            f"\n[bold]Merged results:[/bold] "
-            f"{len(merged_files)} files in {merged_dir}"
+            f"\n[bold]Merged results:[/bold] {len(merged_files)} files in {merged_dir}"
         )
     console.print()
 

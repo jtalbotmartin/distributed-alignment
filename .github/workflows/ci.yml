@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'phase-*']
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHONPATH: src
+  UV_CACHE_DIR: ~/.cache/uv
+
+jobs:
+
+  quality:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Ruff lint
+        run: uv run ruff check src/ tests/
+
+      - name: Ruff format check
+        run: uv run ruff format --check src/ tests/
+
+      - name: mypy strict
+        run: uv run mypy src/ --strict
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run unit tests
+        run: >
+          uv run pytest tests/
+          -m "not integration"
+          -v
+          --cov=distributed_alignment
+          --cov-report=xml
+          --cov-report=term-missing
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  integration-tests:
+    name: Integration Tests (DIAMOND)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [quality, unit-tests]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Install DIAMOND
+        run: |
+          wget -q https://github.com/bbuchfink/diamond/releases/download/v2.1.10/diamond-linux64.tar.gz
+          tar xzf diamond-linux64.tar.gz
+          sudo mv diamond /usr/local/bin/
+          diamond version
+
+      - name: Run integration tests
+        run: >
+          uv run pytest tests/
+          -m "integration"
+          -v
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build -t distributed-alignment:test .
+
+      - name: Verify image
+        run: docker run --rm distributed-alignment:test --help

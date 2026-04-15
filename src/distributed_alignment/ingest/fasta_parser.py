@@ -70,10 +70,7 @@ def parse_fasta(
                 # Parse the new header
                 header = line[1:].strip()
                 if not header:
-                    msg = (
-                        f"Line {line_number}: empty FASTA header "
-                        f"(no text after '>')"
-                    )
+                    msg = f"Line {line_number}: empty FASTA header (no text after '>')"
                     raise ValueError(msg)
                 seq_id = header.split()[0]
                 sequence_lines = []
@@ -89,9 +86,7 @@ def parse_fasta(
 
     # Yield the last sequence in the file
     if header is not None and seq_id is not None:
-        yield _build_sequence(
-            seq_id, header, sequence_lines, line_number, max_length
-        )
+        yield _build_sequence(seq_id, header, sequence_lines, line_number, max_length)
 
 
 def _build_sequence(
@@ -119,10 +114,7 @@ def _build_sequence(
     sequence = "".join(sequence_lines)
 
     if not sequence:
-        msg = (
-            f"Line {line_number}: sequence '{seq_id}' has no "
-            f"amino acid data"
-        )
+        msg = f"Line {line_number}: sequence '{seq_id}' has no amino acid data"
         raise ValueError(msg)
 
     length = len(sequence)

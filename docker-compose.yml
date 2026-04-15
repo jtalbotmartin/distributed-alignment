@@ -1,19 +1,89 @@
-# Minimal dev stack for running tests with DIAMOND.
-# Full production stack (Ray, Prometheus, Grafana) is Phase 4.
+# Full stack: workers, ingestion, monitoring, and dev testing.
 #
-# Usage:
-#   docker-compose build dev                                 # rebuild after code changes
-#   docker-compose run dev uv run pytest tests/ -v           # all unit tests
-#   docker-compose run dev uv run pytest tests/ -m integration -v   # integration tests
-#   docker-compose run dev uv run distributed-alignment --help      # CLI
+# Quick start:
+#   docker-compose run --rm ingest                        # ingest test data
+#   docker-compose up -d worker prometheus grafana        # start pipeline + monitoring
+#   docker-compose up -d --scale worker=4                 # scale to 4 workers
+#   docker-compose logs -f worker                         # watch progress
+#   open http://localhost:3000                            # Grafana dashboard
 #
-# Code is baked into the image at build time. After editing source files,
-# rebuild with `docker-compose build dev` to pick up changes.
+# Development:
+#   docker-compose build dev && docker-compose run --rm dev   # run all tests
 
 services:
+
+  # --- Production worker ---
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - run
+      - --work-dir
+      - /data/work
+      - --workers
+      - "1"
+    volumes:
+      - shared-data:/data
+    environment:
+      - DA_LOG_LEVEL=INFO
+      - DA_METRICS_PORT=9090
+    depends_on:
+      - prometheus
+    restart: on-failure
+    deploy:
+      replicas: 2
+
+  # --- One-off ingestion ---
+  ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - ingest
+      - --queries
+      - /data/input/queries.fasta
+      - --reference
+      - /data/input/reference.fasta
+      - --output-dir
+      - /data/work
+    volumes:
+      - shared-data:/data
+      - ./data/input:/data/input:ro
+    profiles:
+      - setup
+
+  # --- Monitoring ---
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    depends_on:
+      - prometheus
+
+  # --- Dev/test container ---
   dev:
     build:
       context: .
       dockerfile: Dockerfile.dev
     working_dir: /app
-    command: ["uv", "run", "pytest", "tests/", "-v"]
+    environment:
+      - PYTHONPATH=src
+    command: [".venv/bin/python", "-m", "pytest", "tests/", "-v"]
+
+volumes:
+  shared-data:

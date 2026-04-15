@@ -92,11 +92,7 @@ class TestGenerateWorkPackages:
 
         packages = stack.generate_work_packages(q_manifest, r_manifest)
 
-        expected_ids = {
-            f"wp_q{q:03d}_r{r:03d}"
-            for q in range(2)
-            for r in range(3)
-        }
+        expected_ids = {f"wp_q{q:03d}_r{r:03d}" for q in range(2) for r in range(3)}
         actual_ids = {p.package_id for p in packages}
         assert actual_ids == expected_ids
 
@@ -113,9 +109,7 @@ class TestGenerateWorkPackages:
         stack = FileSystemWorkStack(tmp_path)
         q_manifest, r_manifest = _make_manifests(1, 1)
 
-        packages = stack.generate_work_packages(
-            q_manifest, r_manifest, max_attempts=5
-        )
+        packages = stack.generate_work_packages(q_manifest, r_manifest, max_attempts=5)
 
         assert packages[0].max_attempts == 5
 
@@ -205,9 +199,7 @@ class TestComplete:
         stack.complete(package.package_id, "/results/output.parquet")
 
         # Read the completed package JSON
-        completed_path = (
-            tmp_path / "completed" / f"{package.package_id}.json"
-        )
+        completed_path = tmp_path / "completed" / f"{package.package_id}.json"
         data = json.loads(completed_path.read_text())
         assert data["completed_at"] is not None
         assert data["state"] == "COMPLETED"
@@ -266,9 +258,7 @@ class TestFail:
         assert data["error_history"] == ["error_1", "error_2"]
         assert data["attempt"] == 2
 
-    def test_fail_max_attempts_exhausted_goes_to_poisoned(
-        self, tmp_path: Path
-    ) -> None:
+    def test_fail_max_attempts_exhausted_goes_to_poisoned(self, tmp_path: Path) -> None:
         stack = FileSystemWorkStack(tmp_path)
         q_manifest, r_manifest = _make_manifests(1, 1)
         stack.generate_work_packages(q_manifest, r_manifest, max_attempts=2)
@@ -346,9 +336,7 @@ class TestReapStale:
         assert stack.status()["RUNNING"] == 0
         assert stack.status()["PENDING"] == 1
 
-    def test_reap_does_not_touch_fresh_packages(
-        self, tmp_path: Path
-    ) -> None:
+    def test_reap_does_not_touch_fresh_packages(self, tmp_path: Path) -> None:
         stack = FileSystemWorkStack(tmp_path)
         q_manifest, r_manifest = _make_manifests(1, 1)
         stack.generate_work_packages(q_manifest, r_manifest)
@@ -385,9 +373,7 @@ class TestReapStale:
 class TestStatus:
     """Tests for status reporting."""
 
-    def test_status_matches_directory_contents(
-        self, tmp_path: Path
-    ) -> None:
+    def test_status_matches_directory_contents(self, tmp_path: Path) -> None:
         stack = FileSystemWorkStack(tmp_path)
         q_manifest, r_manifest = _make_manifests(3, 2)
         stack.generate_work_packages(q_manifest, r_manifest)
@@ -443,8 +429,7 @@ class TestConcurrentClaims:
                     errors.append(exc)
 
         threads = [
-            threading.Thread(target=worker, args=(f"worker-{i}",))
-            for i in range(10)
+            threading.Thread(target=worker, args=(f"worker-{i}",)) for i in range(10)
         ]
         for t in threads:
             t.start()
@@ -452,12 +437,8 @@ class TestConcurrentClaims:
             t.join()
 
         assert errors == [], f"Errors during concurrent claims: {errors}"
-        assert len(claimed) == 5, (
-            f"Expected 5 claims, got {len(claimed)}"
-        )
-        assert len(set(claimed)) == 5, (
-            f"Duplicate claims: {claimed}"
-        )
+        assert len(claimed) == 5, f"Expected 5 claims, got {len(claimed)}"
+        assert len(set(claimed)) == 5, f"Duplicate claims: {claimed}"
         assert stack.pending_count() == 0
         assert stack.status()["RUNNING"] == 5
 

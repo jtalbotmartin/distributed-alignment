@@ -11,8 +11,7 @@ build/
 .venv/
 venv/
 
-# uv
-uv.lock
+# uv (uv.lock should be committed for reproducible builds)
 
 # IDE
 .idea/
@@ -42,3 +41,4 @@ catalogue.duckdb.wal
 # Reference files (personal, not for the repo)
 ref/
 docs/notes.md
+data/

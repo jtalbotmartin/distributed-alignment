@@ -231,3 +231,283 @@ Ingest → chunk → schedule → align (single worker) → merge → Parquet ou
 - `mypy src/ --strict` clean
 
 ---
+
+# `distributed-alignment` — Phase 2 Task Breakdown
+
+## Phase 2: Fault Tolerance & Distribution
+
+**Goal**: Multi-worker execution with fault recovery, containerised deployment, metrics, monitoring, and CI/CD.
+
+This is the phase that makes the project impressive. Phase 1 proved the pipeline works end-to-end; Phase 2 proves it works when things go wrong and when multiple workers are competing for work.
+
+---
+
+### What Phase 2 covers (from TDD §9)
+
+- Heartbeat mechanism and timeout reaper
+- Retry with backoff, poison queue for permanent failures
+- Ray integration (workers as Ray actors)
+- Docker packaging (Dockerfile + docker-compose with N workers)
+- Chaos tests: kill worker mid-package, verify recovery
+- Prometheus metrics exposition
+- Grafana dashboard JSON
+- GitHub Actions CI/CD pipeline
+
+### Breakdown
+
+Phase 2 breakdown — 10 tasks (2.0 through 2.9), ordered so each builds on the last.
+
+The key structural decision is multiprocessing before Ray (Task 2.3 before 2.5). This matters because the hard problems in Phase 2 — atomic claims under real concurrency, heartbeat/reaper race conditions, worker death recovery — are all concurrency problems, not Ray problems. Getting them right with multiprocessing (which is simpler to debug, no cluster setup, no Ray overhead) means that when you add Ray, you're just swapping the execution backend, not debugging distributed systems issues and Ray issues simultaneously.
+
+The other thing worth noting is the ordering of 2.1 → 2.2 → 2.3 → 2.4. Heartbeats are useless without a reaper, the reaper is meaningless without multiple workers, and chaos tests validate the whole chain. Each task has a clear "this is why this exists" that references the previous one.
+
+Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could be done in any order. I put them after the core concurrency work because they're less architecturally risky — they're important for the portfolio but unlikely to surface bugs in the core system.
+
+---
+
+## Task Breakdown
+
+### Task 2.0: Wire config into CLI + minor Phase 1 cleanup
+
+**What**: The `DistributedAlignmentConfig` class exists but the CLI hard-codes values as Typer defaults. Wire the config so that `distributed_alignment.toml` settings are respected, with CLI flags as overrides.
+
+**Why now**: Phase 2 adds config for heartbeat intervals, timeouts, worker counts, and Ray settings. The config needs to actually work before we add more fields to it.
+
+**Key behaviours**:
+- CLI loads config from `distributed_alignment.toml` if present in the working directory, then applies CLI flag overrides
+- Environment variables (`DA_*`) override the TOML file
+- CLI flags override everything
+- Add new config fields needed for Phase 2: `heartbeat_interval`, `heartbeat_timeout`, `max_attempts`, `num_workers`
+
+**Files**:
+- Update `src/distributed_alignment/config.py`
+- Update `src/distributed_alignment/cli.py`
+- Update `tests/test_scaffolding.py` or create `tests/test_config.py`
+
+---
+
+### Task 2.1: Heartbeat mechanism
+
+**What**: Workers send periodic heartbeats while processing a work package. The work stack tracks the last heartbeat timestamp per running package.
+
+**Key behaviours**:
+- `WorkerRunner` starts a background thread that calls `work_stack.heartbeat(package_id)` every N seconds while a package is being processed
+- `heartbeat()` updates the `heartbeat_at` timestamp in the work package JSON
+- The heartbeat thread starts when a package is claimed and stops when it's completed or failed
+- Thread-safe: the heartbeat thread and the main worker thread both access the work package file
+
+**Files**:
+- Update `src/distributed_alignment/worker/runner.py`
+- Update `src/distributed_alignment/scheduler/filesystem_backend.py` (heartbeat method may need implementation)
+- `tests/test_heartbeat.py`
+
+**Tests**:
+- Worker processing a package updates heartbeat_at periodically
+- heartbeat_at is more recent than claimed_at after processing starts
+- Heartbeat thread stops cleanly when package completes
+- Heartbeat thread stops cleanly when package fails
+
+---
+
+### Task 2.2: Timeout reaper
+
+**What**: A reaper process that detects stale heartbeats and re-enqueues timed-out packages.
+
+**Key behaviours**:
+- `reap_stale(timeout_seconds)` on the work stack scans `running/` for packages where `now - heartbeat_at > timeout`
+- Timed-out packages are moved back to `pending/` with attempt incremented and `TIMEOUT` recorded in error_history
+- If a package has exhausted max_attempts via timeouts, it goes to `poisoned/`
+- The reaper can run as a background thread in any worker, or as a standalone process
+- For Phase 2: run the reaper as a background thread in the WorkerRunner, checking every `reaper_interval` seconds
+
+**Files**:
+- Update `src/distributed_alignment/scheduler/filesystem_backend.py` (implement/refine `reap_stale`)
+- Update `src/distributed_alignment/worker/runner.py` (reaper background thread)
+- `tests/test_reaper.py`
+
+**Tests**:
+- Package with stale heartbeat (older than timeout) gets moved back to PENDING
+- Package with fresh heartbeat is left alone
+- Package with max attempts exhausted goes to POISONED
+- Reaper handles empty running directory gracefully
+- Reaper doesn't interfere with actively running packages (heartbeat is recent)
+- Concurrent: reaper runs while worker is processing — no race conditions
+
+---
+
+### Task 2.3: Multi-worker execution (multiprocessing, no Ray yet)
+
+**What**: Run N workers concurrently using Python multiprocessing. This is the stepping stone to Ray — get the concurrency semantics right with simpler tooling first.
+
+**Why multiprocessing before Ray**: The atomic claim mechanism, heartbeats, and reaper all need to work correctly with real concurrency before adding Ray's complexity. Multiprocessing gives us real parallel execution with real race conditions to test against.
+
+**Key behaviours**:
+- `distributed-alignment run --work-dir work/ --workers 4` spawns 4 worker processes
+- Each worker runs an independent WorkerRunner loop
+- Workers compete for packages via the atomic claim mechanism
+- The reaper runs as a background thread in one (or all) workers
+- When all packages are processed, workers exit cleanly
+- The CLI waits for all workers to finish before running the merge step
+
+**Files**:
+- Update `src/distributed_alignment/cli.py` (multi-worker support)
+- Update `src/distributed_alignment/worker/runner.py` (if needed for multi-process compatibility)
+- `tests/test_multiworker.py`
+
+**Tests**:
+- 4 workers processing 8 packages → all 8 completed, none duplicated
+- Worker death (kill one process mid-run) → its package is eventually reclaimed via reaper and completed by another worker
+- All workers exit cleanly when work is exhausted
+- Status shows correct counts throughout
+
+---
+
+### Task 2.4: Chaos testing
+
+**What**: Explicit tests that simulate failures and verify recovery. These are the tests that prove the system is fault-tolerant, not just concurrent.
+
+**Key behaviours**:
+- Kill a worker process mid-alignment (SIGKILL) → package times out → reaper reclaims → another worker completes it
+- Kill a worker between claim and execution start → same recovery path
+- Simulate OOM (mock DIAMOND returning exit code 137) → package fails → retried → eventually succeeds or poisons
+- Corrupt a work package JSON file → worker handles gracefully, doesn't crash the loop
+- Fill up the results directory (mock disk full) → worker fails the package cleanly
+
+**Files**:
+- `tests/test_chaos.py`
+
+**Tests**: All marked `@pytest.mark.integration` (they need real multi-process execution and potentially DIAMOND).
+
+---
+
+### Task 2.5: Ray integration
+
+**What**: Replace multiprocessing with Ray for worker management. Ray provides task-level fault tolerance, resource management, and a foundation for elastic scaling on K8s.
+
+**Key behaviours**:
+- `AlignmentWorker` as a Ray actor with configurable CPU/memory resources
+- `distributed-alignment run --workers N --backend ray` uses Ray; `--backend local` uses multiprocessing (default)
+- Ray in local mode for development (no cluster needed); Ray on a cluster for production
+- The WorkerRunner logic is unchanged — Ray just manages where and how many instances run
+- Ray dashboard available at localhost:8265 when running
+
+**Files**:
+- `src/distributed_alignment/worker/ray_actor.py`
+- Update `src/distributed_alignment/cli.py` (Ray backend option)
+- Update `pyproject.toml` (add ray dependency)
+- `tests/test_ray_worker.py`
+
+**Tests**:
+- Ray actor processes packages correctly (same results as multiprocessing)
+- Multiple Ray actors process packages concurrently without conflicts
+- Ray actor failure → Ray restarts it → package is reclaimed
+- Mark Ray tests as `@pytest.mark.integration` (Ray adds significant startup time)
+
+---
+
+### Task 2.6: Prometheus metrics
+
+**What**: Expose pipeline metrics in Prometheus format for monitoring.
+
+**Key behaviours**:
+- Metrics from TDD §3.8: `da_packages_total` (gauge by state), `da_package_duration_seconds` (histogram), `da_sequences_processed_total` (counter), `da_hits_found_total` (counter), `da_worker_heartbeat_age_seconds` (gauge), `da_worker_count` (gauge), `da_errors_total` (counter by type), `da_diamond_exit_code` (counter by code)
+- Metrics exposed via an HTTP endpoint (prometheus_client start_http_server) on a configurable port
+- Metrics updated by the worker during processing
+- Metrics server runs as a background thread, doesn't block the pipeline
+
+**Files**:
+- `src/distributed_alignment/observability/metrics.py`
+- Update `src/distributed_alignment/worker/runner.py` (emit metrics)
+- Update `pyproject.toml` (add prometheus_client dependency)
+- `tests/test_metrics.py`
+
+**Tests**:
+- Metrics server starts and exposes /metrics endpoint
+- Processing a package updates the relevant counters/histograms
+- Package state transitions update da_packages_total gauge
+- Metrics are correct after processing N packages
+
+---
+
+### Task 2.7: Grafana dashboard
+
+**What**: Pre-configured Grafana dashboard JSON that visualises the Prometheus metrics.
+
+**Key behaviours**:
+- Dashboard with panels from TDD §3.8: pipeline progress, worker health, resource usage, cost estimate, error analysis
+- Auto-provisioned via Grafana's provisioning mechanism in docker-compose
+- Connects to Prometheus as a data source
+
+**Files**:
+- `observability/grafana/dashboards/distributed-alignment.json`
+- `observability/grafana/provisioning/dashboards.yml`
+- `observability/grafana/provisioning/datasources.yml`
+- `observability/prometheus.yml` (scrape config targeting the metrics endpoint)
+- Update `docker-compose.yml` (add Prometheus and Grafana services)
+
+**Tests**: Manual — verify dashboard loads and shows data when pipeline runs via docker-compose.
+
+---
+
+### Task 2.8: Docker packaging (production-ready)
+
+**What**: Upgrade from the dev Dockerfile to a proper multi-stage build. Update docker-compose with multi-worker + observability stack.
+
+**Key behaviours**:
+- Multi-stage Dockerfile: build stage (uv sync, compile) → runtime stage (slim, just DIAMOND + Python + installed packages)
+- docker-compose.yml with services: N workers (configurable replica count), Prometheus, Grafana, optional explorer (stub for Phase 4)
+- Shared volume for the work directory
+- Health checks on worker containers
+
+**Files**:
+- `Dockerfile` (production, replaces or supplements Dockerfile.dev)
+- Update `docker-compose.yml`
+- `docker-compose.override.yml` (dev overrides: source mounting, debug ports)
+
+---
+
+### Task 2.9: GitHub Actions CI/CD
+
+**What**: Automated quality checks on every push and PR.
+
+**Key behaviours**:
+- Lint job: ruff check + ruff format --check
+- Type check job: mypy --strict
+- Unit test job: pytest -m "not integration" with coverage report
+- Docker build job: build the image, verify it starts
+- Integration test job (optional, runs on main only): docker-compose with DIAMOND, runs integration tests
+- Upload coverage to Codecov or similar
+
+**Files**:
+- `.github/workflows/ci.yml`
+- Possibly `.github/workflows/integration.yml` (separate workflow for heavier tests)
+
+---
+
+## Implementation Order
+
+Tasks are ordered to build on each other:
+
+1. **2.0** — Config wiring (foundation for all Phase 2 config)
+2. **2.1** — Heartbeats (needed before reaper)
+3. **2.2** — Reaper (needed before multi-worker makes sense)
+4. **2.3** — Multi-worker via multiprocessing (validates concurrency)
+5. **2.4** — Chaos tests (validates fault tolerance)
+6. **2.5** — Ray integration (upgrades the worker backend)
+7. **2.6** — Prometheus metrics (observability)
+8. **2.7** — Grafana dashboard (visualisation of metrics)
+9. **2.8** — Docker packaging (deployment)
+10. **2.9** — CI/CD (automation)
+
+
+## Acceptance Criteria for Phase 2 Complete
+
+- Multi-worker execution: `--workers 4` processes packages in parallel correctly
+- Fault tolerance demonstrated: killing a worker doesn't lose data or stall the pipeline
+- Ray backend works: `--backend ray` produces identical results to `--backend local`
+- Prometheus metrics exposed and accurate
+- Grafana dashboard loads and shows meaningful data during a pipeline run
+- docker-compose spins up the full stack (workers + Prometheus + Grafana)
+- GitHub Actions CI passes on push
+- All existing Phase 1 tests still pass
+

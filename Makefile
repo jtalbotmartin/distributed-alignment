@@ -4,7 +4,7 @@
 PYTHONPATH := src
 export PYTHONPATH
 
-.PHONY: help setup test test-integration test-all lint cli
+.PHONY: help setup test test-integration test-all test-docker docker-build lint cli
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -19,8 +19,14 @@ test: ## Run unit tests (no DIAMOND needed)
 test-integration: ## Run integration tests (requires DIAMOND)
 	uv run pytest tests/ -v -m integration
 
-test-all: ## Run all tests
+test-all: ## Run all local tests (unit + integration)
 	uv run pytest tests/ -v
+
+docker-build: ## Build the dev Docker image
+	docker-compose build dev
+
+test-docker: docker-build ## Run full suite in Docker (DIAMOND + Ray)
+	docker-compose run --rm dev
 
 lint: ## Run linting and type checking
 	uv run ruff check src/ tests/

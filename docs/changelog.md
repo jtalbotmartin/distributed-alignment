@@ -348,3 +348,355 @@ Multiple workarounds were tried and failed:
 **Trade-off**: After code changes, `uv sync` no longer reinstalls the project (there's nothing to install). For pytest, this is transparent — `pythonpath` always reads from `src/`. For the CLI, the Makefile's `PYTHONPATH=src` always reads from `src/`. This is actually simpler than the editable install approach.
 
 **Status**: Complete
+
+---
+
+## Phase 2: Fault Tolerance & Distribution
+
+### Task 2.0: Wire config into CLI — 2026-04-09
+
+**What was done**:
+- Added Phase 2 fields to `DistributedAlignmentConfig`: `backend` (`Literal["local", "ray"]`, default `"local"`) and `reaper_interval` (default 60 seconds). Existing fields `heartbeat_interval`, `heartbeat_timeout`, `max_attempts` were already present.
+- Created `load_config()` function in `config.py` that handles TOML file discovery (searches `work_dir` first, then cwd), applies env var overrides, and merges explicit CLI overrides. Overrides with value `None` are ignored, so CLI flags only take effect when explicitly provided.
+- Rewired all CLI subcommands (`ingest`, `run`, `status`) to use `load_config()` instead of hard-coded defaults. CLI flags now default to `None` so they only override config when the user explicitly passes them.
+- Updated `distributed_alignment.toml` with all settings, grouped by category, with inline comments explaining each field.
+- `tests/test_config.py` — 16 new tests across 6 test classes: defaults, Phase 2 fields, TOML loading, env var overrides, `load_config` with TOML discovery and override precedence, CLI config integration.
+
+**Decisions made**:
+- CLI flag defaults are `None`, not the config defaults. This is the standard pattern for "user explicitly provided vs using default" — if the CLI value is `None`, the config file / env var / default applies. If set, the CLI flag wins. Pydantic Settings' init kwargs have highest priority in the source chain.
+- `load_config()` uses `os.chdir()` temporarily to make `TomlConfigSettingsSource` find the TOML file in the work directory. This is slightly hacky but pydantic-settings doesn't support specifying a custom TOML path at runtime — `toml_file` in `model_config` is class-level, not instance-level. The `chdir` is wrapped in a `try/finally` block.
+- The `run` command now passes `cfg.max_attempts` to `generate_work_packages()` and `cfg.diamond_timeout` to `WorkerRunner`, using values from the config instead of hard-coded defaults.
+- Kept the `backend` field as a simple `Literal` — it's not wired into the worker yet (Phase 2 will use it to choose between `local` mode and `ray` mode).
+
+**Problems encountered**:
+- `from __future__ import annotations` + Typer: Moving `Path` into a `TYPE_CHECKING` block broke Typer because it evaluates annotations at runtime to build CLI parameters. Got `NameError: name 'Path' is not defined` on all CLI commands. Fixed by keeping `Path` as a runtime import with `# noqa: TCH003`.
+- `load_config()` initially tried to set an env var to redirect TOML loading — pydantic-settings `TomlConfigSettingsSource` ignores custom env vars and always reads from cwd. Switched to the `os.chdir()` approach.
+- mypy strict rejected `**dict[str, object]` unpacked into `BaseSettings.__init__` because the init has specific typed kwargs. Added `# type: ignore[arg-type]` — the dict values are validated by Pydantic at runtime.
+
+**Learnings**:
+- Typer and `from __future__ import annotations` don't mix well with `TYPE_CHECKING` — Typer needs runtime access to type annotations for CLI parameter generation. Any type used in a `@app.command()` function signature must be a real runtime import.
+- Pydantic Settings' TOML file discovery is cwd-relative and class-level. For runtime configuration of which file to read, temporary `chdir()` is the simplest workaround. An alternative would be a factory method that creates a subclass with a different `toml_file`, but that's over-engineered for this use case.
+
+**Status**: Complete
+
+---
+
+### Task 2.1: Heartbeat mechanism — 2026-04-09
+
+**What was done**:
+- Made `FileSystemWorkStack.heartbeat()` thread-safe: catches `FileNotFoundError` when the package has been completed/failed by the main thread while the heartbeat is in flight. Logs a debug message instead of crashing.
+- Created `HeartbeatSender` context manager in `worker/runner.py`: spawns a daemon thread that calls `work_stack.heartbeat(package_id)` every `interval` seconds. Stops cleanly on context exit via `threading.Event`. Catches and logs exceptions in the heartbeat call rather than crashing the worker.
+- Integrated `HeartbeatSender` into `WorkerRunner.run()`: each claimed package is processed inside a `with HeartbeatSender(...)` block. The heartbeat starts after the package is claimed (state is RUNNING) and stops when processing completes/fails.
+- Added `heartbeat_interval` parameter to `WorkerRunner.__init__` (default 30.0 seconds). Wired from `cfg.heartbeat_interval` in the CLI's `run` command.
+- Exported `HeartbeatSender` from `worker/__init__.py`.
+- `tests/test_heartbeat.py` — 7 tests across 3 classes: `heartbeat()` method correctness and thread-safety, `HeartbeatSender` lifecycle (periodic updates, clean shutdown, package completion during heartbeat, exception handling), and `WorkerRunner` integration with a slow mock DIAMOND.
+
+**Decisions made**:
+- `HeartbeatSender` uses `threading.Event.wait(timeout=interval)` for the sleep loop. This is cleaner than `time.sleep()` + checking a flag — the event wakes the thread immediately when `stop()` is called, rather than waiting for the current sleep to finish.
+- The heartbeat thread is a daemon thread. If the main process crashes without calling `__exit__`, the daemon thread dies with it — no orphaned threads.
+- On heartbeat exception (any `Exception`), the thread logs the error and exits. This prevents a broken heartbeat from retrying indefinitely. The package will eventually be reaped by the stale heartbeat reaper (Task 2.2).
+- The heartbeat thread doesn't update any shared state with the main thread — it only writes to the filesystem (the work package JSON in `running/`). The main thread reads/moves the same file. Thread safety comes from the filesystem: if the file has been moved, `FileNotFoundError` is caught.
+
+**Problems encountered**:
+- None significant. The `threading.Event.wait(timeout=)` pattern worked cleanly on the first try. The integration test with the slow mock (0.3s DIAMOND delay, 0.05s heartbeat interval) reliably confirms the heartbeat fires during processing.
+
+**Learnings**:
+- `threading.Event.wait(timeout=interval)` is the idiomatic way to implement a stoppable periodic loop in Python. It combines sleeping and checking the stop signal in a single atomic call, and wakes immediately when the event is set.
+- Context managers (`__enter__`/`__exit__`) are the right pattern for thread lifecycle — the caller doesn't need to remember to call `stop()`, and exception paths are handled automatically.
+
+**Status**: Complete
+
+---
+
+### Task 2.2: Timeout reaper — 2026-04-09
+
+**What was done**:
+- Fixed `FileSystemWorkStack.reap_stale()`: packages with `heartbeat_at=None` are now treated as stale (previously skipped). Added `FileNotFoundError` handling around both the read and rename steps for thread safety. Improved error history messages to include the last heartbeat time and timeout value.
+- Created `ReaperThread` context manager in `worker/runner.py`: daemon thread that calls `reap_stale(timeout_seconds)` every `interval` seconds. Same `Event.wait(timeout=)` pattern as `HeartbeatSender`. Catches and logs exceptions rather than crashing.
+- Integrated `ReaperThread` into `WorkerRunner.run()`: the reaper wraps the entire worker claim loop, so it scans for stale packages from other dead workers while this worker is processing its own packages.
+- Added `heartbeat_timeout` and `reaper_interval` parameters to `WorkerRunner.__init__`. Wired from config in the CLI.
+- Exported `ReaperThread` from `worker/__init__.py`.
+- `tests/test_reaper.py` — 13 tests across 4 classes: `reap_stale` basics (8 tests: stale/fresh/null-heartbeat/poisoned/empty/multiple), race conditions (1 test: file disappears mid-scan), `ReaperThread` lifecycle (3 tests: detection/shutdown/exception), and integration (1 test: dead worker → reaper reclaims → new worker processes).
+
+**Decisions made**:
+- `heartbeat_at=None` is now treated as stale, not skipped. A package in `running/` with no heartbeat means the worker never started heartbeating — it's dead. The error message distinguishes "heartbeat stale: last seen X" from "heartbeat never started".
+- `ReaperThread` logs at WARNING on exception (not DEBUG) — a failing reaper is operationally significant, unlike a failed individual heartbeat.
+- The integration test runs the reaper and worker sequentially rather than relying on the worker loop to wait for the reaper. The current worker loop exits immediately when `claim()` returns None — it doesn't poll. In a multi-worker scenario (Phase 2 with Ray), the reaper runs independently from any single worker's claim loop. The test validates the chain: stale heartbeat → reaper detects → pending → worker claims → processes.
+- Race condition handling uses the write-then-unlink pattern: write the new state file first, then delete the old one. If the unlink fails (another thread moved it), the write may have created a duplicate — but this is benign because the package ID is unique and the next claim/reap will find it.
+
+**Problems encountered**:
+- The integration test initially failed because the worker loop exited before the reaper fired. The worker's `claim()` found nothing pending (the stale package was in `running/`, not `pending/`) and returned immediately. Fixed by running the reaper first to reclaim the package, then running the worker to process it.
+
+**Learnings**:
+- The reaper and worker loop have a timing dependency: the reaper must fire before the worker gives up. In a polling worker (Phase 2), this happens naturally because the worker retries `claim()`. In the current single-pass loop, the reaper needs to have already run. This is fine for Phase 1 where there's one worker, but Phase 2's multi-worker setup will need a polling claim loop with backoff.
+
+**Status**: Complete
+
+---
+
+### Task 2.3: Multi-worker execution via multiprocessing — 2026-04-09
+
+**What was done**:
+- Replaced the single-pass worker loop with a **polling claim loop with exponential backoff** (0.5s → 1s → 2s → 5s max). Workers now retry `claim()` when the queue is empty, allowing them to pick up packages reaped from dead workers. Workers exit after `max_idle_time` seconds with no successful claims.
+- Added `request_shutdown()` method to `WorkerRunner` using `threading.Event` for clean external shutdown.
+- Added `run_worker_process()` module-level function as the entry point for worker subprocesses. Each subprocess creates its own structlog config, work stack connection, `DiamondWrapper`, and `WorkerRunner`.
+- Updated CLI `run` command: when `--workers N > 1`, spawns N `multiprocessing.Process` instances, each running `run_worker_process()`. Waits for all to finish with `join()`, logs warnings on non-zero exits. Single worker mode (`--workers 1`) uses the existing in-process path with no multiprocessing overhead.
+- `tests/test_multiworker.py` — 7 tests across 4 classes: polling loop (idle exit, process-and-exit, shutdown signal), multi-worker (all packages completed, no duplicates), dead-worker recovery (stale heartbeat → reaper → new worker processes), and actual process death via `SIGKILL` (multiprocessing.Process killed → reaper reclaims → recovery).
+
+**Decisions made**:
+- **Polling with exponential backoff** rather than a fixed interval. Short backoff (0.5s) right after a claim attempt means workers are responsive to new packages. Long backoff (capped at 5s) prevents busy-waiting on an empty queue. Backoff resets to 0.5s after any successful claim.
+- **`max_idle_time` (default 30s)** as the exit condition rather than "pending == 0". The reaper may return packages to pending at any time — a worker that exits because pending is zero would miss reaped packages. Idle time is the right signal: "I've been polling for 30 seconds and nothing has appeared."
+- **`multiprocessing.Process` (not Pool)**: each process is independent with its own lifecycle. A pool would farm tasks from a central queue, which conflicts with our work stack's pull-based claim model. Processes that crash are detected via non-zero exit codes.
+- **Process arguments are all serialisable primitives** (`str` paths, `int`/`float` config values). No pickling of complex objects — each subprocess reconstructs its own `FileSystemWorkStack`, `DiamondWrapper`, etc. from the paths.
+- The SIGKILL test uses a module-level function (`_slow_worker_target`) because macOS's `spawn` multiprocessing start method can't pickle local closures.
+
+**Problems encountered**:
+- `AttributeError: Can't pickle local object` — macOS uses the `spawn` multiprocessing start method by default, which pickles the target function and sends it to the child process. Local functions (defined inside a test method) can't be pickled. Moved the worker target to module level.
+- Unit tests with timing-dependent behaviour (polling loops, idle timeouts, reaper intervals) take real clock time. The full unit test suite now takes ~5-6 minutes due to these tests. Timeouts are kept as short as possible without being flaky.
+
+**Learnings**:
+- The polling loop with backoff elegantly resolves the timing dependency between the reaper and worker identified in Task 2.2. Workers no longer exit on the first empty `claim()` — they keep polling, giving the reaper time to reclaim stale packages.
+- macOS's `spawn` multiprocessing requires all process targets and arguments to be picklable. This is a stronger constraint than Linux's `fork` (where the child inherits the parent's memory). Designing `run_worker_process()` with only primitive arguments ensures cross-platform compatibility.
+- `multiprocessing.Process` with independent work stacks (all accessing the same filesystem directory) gives true parallelism without shared-memory coordination. The filesystem's atomic `os.rename()` is the only synchronisation mechanism.
+
+**Status**: Complete
+
+---
+
+### Task 2.4: Chaos testing — 2026-04-09
+
+**What was done**:
+- `tests/test_chaos.py` — 8 chaos tests across 7 test classes covering 7 failure scenarios:
+  1. **Worker SIGKILL during alignment** (integration): Kill one of two workers mid-processing → surviving worker's reaper reclaims the dead worker's packages → all completed.
+  2. **Simulated OOM — DIAMOND exit 137**: Mock fails twice with exit code 137, succeeds on 3rd → completed with 2 OOM entries in error_history. Also: always-OOM → poisoned.
+  3. **Intermittent failures**: Mock alternates success/failure → all 4 packages eventually complete via retries.
+  4. **Corrupt work package JSON**: Invalid JSON and wrong-schema JSON in `pending/` → worker skips them, moves to `poisoned/`, processes valid packages.
+  5. **Result write failure (simulated disk full)**: Patch `pq.write_table` to raise `OSError` on first call → package is failed and retried, worker continues.
+  6. **All workers die, then restart**: SIGKILL all workers → make heartbeats stale → spawn new workers → reapers reclaim → all packages completed.
+
+**Bug found and fixed**:
+- **Corrupt JSON crash in `claim()`**: `FileSystemWorkStack.claim()` renamed a file from `pending/` to `running/` then tried to parse it (`WorkPackage(**json.loads(...))`). If the JSON was corrupt (invalid syntax or wrong schema), the parse raised an unhandled exception and the corrupt file got stuck in `running/` forever — blocking the queue.
+- **Fix**: Wrapped the JSON parse in `try/except`. On parse failure, the corrupt file is moved to `poisoned/` (so it's visible for investigation) and the worker continues to the next candidate. Logged as `corrupt_work_package` at ERROR level.
+
+**Decisions made**:
+- Integration chaos tests (SIGKILL scenarios) use module-level target functions for macOS `spawn` compatibility. They manually make heartbeats stale after kill rather than waiting for real staleness — this makes tests faster and deterministic.
+- Single-process chaos tests (OOM, intermittent failures, corrupt JSON, write failures) use mocks — no multiprocessing needed, much faster.
+- The `_wait_for()` helper polls `stack.status()` with a timeout rather than using fixed `time.sleep()` — this makes tests as fast as possible while still reliable.
+
+**Fault tolerance verified under 7 failure scenarios**:
+- Worker process death (SIGKILL) during processing
+- DIAMOND OOM (exit 137) with retry and poison
+- Intermittent DIAMOND failures with retry
+- Corrupt work package JSON in the queue
+- Disk write failures during result output
+- Full cluster death and restart
+- Wrong-schema work package files
+
+**Status**: Complete
+
+---
+
+### Task 2.5: Ray integration — 2026-04-10
+
+**What was done**:
+- `src/distributed_alignment/worker/ray_actor.py` — `AlignmentWorker` Ray actor wrapped in `create_alignment_actor()` factory and `run_ray_workers()` orchestrator. The actor reconstructs all dependencies (logging, work stack, DiamondWrapper, WorkerRunner) from a plain-dict config inside the Ray process. `_try_import_ray()` provides a clear error message if Ray is not installed.
+- Updated `src/distributed_alignment/cli.py` with `--backend` flag and three dispatch paths: `_run_single_worker()` (1 worker, in-process), `_run_multiprocess_backend()` (N workers, multiprocessing), `_run_ray_backend()` (N workers, Ray actors).
+- Updated `pyproject.toml`: Ray as optional dependency (`[project.optional-dependencies] ray = ["ray[default]>=2.9"]`), mypy override for `ray.*`.
+- `tests/test_ray_worker.py` — 7 tests: import handling (success/failure), backend flag, and Ray integration tests (basic functionality, concurrent execution, error handling). Integration tests skip on paths with spaces (iCloud Drive — known Ray limitation).
+
+**Decisions made**:
+- **Ray is an optional dependency** — installed via `uv add 'distributed-alignment[ray]'`. The CLI handles missing ray gracefully with a clear error message. All existing tests pass without ray installed.
+- **Actor config is a plain dict**, not a Pydantic model. Ray serialises actor arguments, and plain dicts are universally serialisable. The actor reconstructs typed objects inside its process.
+- **`RAY_RUNTIME_ENV_HOOK=""` disables Ray's uv hook** which conflicts with `uv run` invocations. The `runtime_env` sets `PYTHONPATH=src` so Ray workers can find the project modules.
+- **Ray integration tests skip on iCloud paths** (`_HAS_SPACE_IN_PATH` check). Ray's working directory packaging fails when the path contains spaces. This affects local development on iCloud Drive but not Docker, CI, or any standard filesystem path.
+- The **Ray backend produces identical results** to the local/multiprocessing backends — same WorkerRunner, same HeartbeatSender, same ReaperThread. Ray only manages process lifecycle.
+
+**Problems encountered**:
+- Ray packages the working directory by default and creates fresh venvs for workers. On iCloud paths with spaces, this fails silently (workers hang during file packaging). Disabling the uv runtime env hook and setting `runtime_env` with `PYTHONPATH` was necessary.
+- Even with the hook disabled, `ray.init()` hangs on the iCloud path. This is a fundamental limitation of Ray's file packaging with space-containing paths. The solution: skip Ray integration tests on such paths, rely on Docker/CI for Ray testing.
+- `AlignmentWorker.remote()` call needs `# type: ignore[attr-defined]` — the `@ray.remote` decorator adds `.remote()` at runtime, which mypy can't see.
+
+**Learnings**:
+- Ray's `runtime_env` is powerful for cluster deployments but complex for local development, especially with non-standard paths. For local single-machine use, `multiprocessing` is simpler and more reliable.
+- Making Ray optional via `[project.optional-dependencies]` is the right pattern — it keeps the core pipeline lightweight and only pulls in Ray's large dependency tree when explicitly needed.
+- The `_try_import_ray()` pattern (lazy import with clear error) is cleaner than a top-level import that crashes on `ImportError`.
+
+**Status**: Complete
+
+---
+
+### Ray Docker testing fix — 2026-04-14
+
+**What was done**:
+- Updated `Dockerfile.dev` to install Ray via `uv pip install "ray[default]>=2.9"` (the `--extra ray` flag didn't work with `package = false`).
+- Fixed `ray_actor.py`: changed `os.environ["RAY_RUNTIME_ENV_HOOK"] = ""` to `os.environ.pop("RAY_RUNTIME_ENV_HOOK", None)` — setting to empty string caused `ValueError`, needs to be deleted.
+- Updated `docker-compose.yml` to use `.venv/bin/python -m pytest` instead of `uv run pytest`. The `uv run` command sets `RAY_RUNTIME_ENV_HOOK` which interferes with Ray worker process startup and can't be reliably removed at runtime.
+- Added `_clear_ray_hook` autouse fixture in `test_ray_worker.py`.
+- Fixed `test_ray_worker.py` integration tests to use real DIAMOND (mocks can't be sent to Ray actor processes — they're separate processes that can't receive non-picklable objects).
+
+**Docker test results**: 205 tests total — 204 passed + 1 timing flake (passes on re-run). All 7 Ray tests pass with real DIAMOND in Docker, including:
+- 2 actors processing 4 packages → all completed
+- Concurrent execution verification
+- Actor error handling with bad config
+
+**Root cause of previous hangs**: `uv run` injects `RAY_RUNTIME_ENV_HOOK` env var. Ray's worker subprocesses inherit this, causing them to try to use uv's runtime env hook which then fails. The fix: bypass `uv run` for Ray tests by using the venv's Python directly.
+
+- Added `make test-docker` target — builds the Docker image and runs the full suite (DIAMOND + Ray) in one command. Also added `make docker-build` as a standalone build target.
+- Updated `README.md` with current test commands, multi-worker/Ray usage, and Phase 2 status.
+
+**Status**: Complete
+
+---
+
+### Task 2.6: Prometheus metrics — 2026-04-15
+
+**What was done**:
+- `src/distributed_alignment/observability/metrics.py` — 7 Prometheus metrics matching the TDD spec:
+  - `da_packages_total` (Gauge by state): work packages per state
+  - `da_package_duration_seconds` (Histogram): time to process one package
+  - `da_sequences_processed` (Counter): total sequences aligned
+  - `da_hits_found` (Counter): total alignment hits
+  - `da_worker_count` (Gauge): active workers
+  - `da_errors` (Counter by error_type): errors categorised as oom/timeout/diamond_error/write_error/missing_chunk/exception
+  - `da_diamond_exit_code` (Counter by exit_code): DIAMOND exit codes
+- Helper functions: `start_metrics_server(port)`, `record_package_completed()`, `record_package_failed()`, `record_diamond_result()`, `update_package_states()`.
+- Updated `src/distributed_alignment/observability/__init__.py` to export all metrics functions.
+- Integrated metrics into `WorkerRunner`:
+  - `run()`: increments/decrements `da_worker_count`, calls `update_package_states()` on each poll cycle.
+  - `_process_package()`: times each package, calls `record_package_completed()` on success.
+  - `_run_alignment()`: calls `record_diamond_result()` after every DIAMOND execution, `record_package_failed()` with categorised error types on failure.
+- Changed `_run_alignment()` return type from `Path | None` to `tuple[Path | None, int]` to return hit count alongside the result path.
+- Added `prometheus-client>=0.20` to runtime dependencies.
+- `tests/test_metrics.py` — 13 tests across 6 classes: metric definitions, record helpers (histogram/counters/gauges), metrics server (HTTP endpoint + port-busy handling), and WorkerRunner integration.
+
+**Decisions made**:
+- Counter names don't include `_total` suffix (prometheus_client adds it automatically). Named `da_sequences_processed` not `da_sequences_processed_total` — the exposed metric is `da_sequences_processed_total` per Prometheus convention.
+- Metrics are emitted from `WorkerRunner` (not from `FileSystemWorkStack`) because the worker has timing information and knows the semantic context (was this a success? what type of error?).
+- `update_package_states()` is called on every poll cycle iteration, not just on state changes. This is cheap (reads a few directory listings) and ensures the gauge always reflects current state, including changes from the reaper.
+- `start_metrics_server()` catches `OSError` for port-busy — in multi-worker mode, only the first worker's server succeeds. Others silently skip (metrics are still tracked in-process, just not exposed via HTTP). The CLI or an orchestrator would handle aggregation.
+- Multiprocess metrics sharing is deferred — each process has its own prometheus_client registry. For production, a push gateway or prometheus_client's multiprocess mode would be needed. Documented as a known limitation.
+
+**Problems encountered**:
+- prometheus_client counter naming: defining `Counter("da_sequences_processed_total", ...)` creates a sample named `da_sequences_processed_total_total` (double `_total`). Fixed by dropping `_total` from the counter definition name — prometheus_client adds the suffix automatically.
+
+**Learnings**:
+- prometheus_client's `REGISTRY.get_sample_value()` is the right way to assert metric values in tests — no HTTP server needed, reads directly from the in-process registry.
+- Counter sample names always end in `_total` regardless of whether the Counter name includes it. Gauge and Histogram names are used as-is.
+
+**Status**: Complete
+
+---
+
+### Task 2.7: Grafana dashboard and metrics backend abstraction — 2026-04-15
+
+**What was done**:
+
+**Part 1 — Dual metrics backend**:
+- Refactored `observability/metrics.py` into a dual-backend architecture: `PrometheusMetrics` (local/multiprocessing) and `RayMetrics` (Ray actors). Both implement the same interface: `observe_duration()`, `inc_sequences()`, `inc_hits()`, `inc_worker()`, `dec_worker()`, `inc_error()`, `inc_diamond_exit()`, `set_package_state()`.
+- `get_metrics()` auto-detects the backend: uses `RayMetrics` when `ray.is_initialized()`, `PrometheusMetrics` otherwise. Returns a singleton.
+- `reset_metrics()` clears the singleton for testing.
+- prometheus_client metrics are now module-level objects (registered once) with `PrometheusMetrics` holding references. Prevents "Duplicated timeseries" errors when `reset_metrics()` is called between tests.
+- `start_metrics_server()` is a no-op for the Ray backend (Ray exposes metrics via its own endpoint).
+- Added `inc_worker()`/`dec_worker()` helper functions used by `WorkerRunner.run()`.
+- `RayMetrics` uses `ray.util.metrics` with tag-based labels instead of prometheus_client's positional labels.
+
+**Part 2 — Grafana dashboard and monitoring stack**:
+- `observability/prometheus.yml` — Prometheus config scraping `host.docker.internal:9090` every 5s.
+- `observability/grafana/provisioning/datasources.yml` — auto-provisions Prometheus as default datasource.
+- `observability/grafana/provisioning/dashboards.yml` — auto-provisions dashboard from JSON.
+- `observability/grafana/dashboards/distributed-alignment.json` — 10-panel dashboard:
+  - Row 1 (Overview): Pipeline Progress gauge, Packages by State stats, Active Workers, Total Hits
+  - Row 2 (Performance): Package Duration p50/p95/p99 timeseries, Throughput (hits/sec, sequences/sec)
+  - Row 3 (Errors & Cost): Errors by Type timeseries, DIAMOND Exit Codes bar gauge, Estimated Cost stat with configurable `$cost_per_cpu_hour` variable (default 0.0464)
+  - Auto-refresh 5s, 15-minute time range, anonymous access
+- Updated `docker-compose.yml` with `prometheus` and `grafana` services alongside the existing `dev` service.
+- Updated `README.md` with Monitoring section.
+
+**Tests**: 16 metrics tests — 3 new backend tests (auto-detection, singleton, reset) plus 13 existing tests updated for the new architecture.
+
+**Decisions made**:
+- prometheus_client metrics are module-level singletons, not instance attributes. This prevents duplicate registration errors when `reset_metrics()` creates a new `PrometheusMetrics` instance. The `PrometheusMetrics` class just holds references.
+- `RayMetrics.inc_worker()`/`dec_worker()` use `getattr(self.worker_count, "_value", 0)` for manual tracking since `ray.util.metrics.Gauge` doesn't support `.inc()`/`.dec()` — only `.set()`.
+- Grafana uses anonymous access with Viewer role — no login needed for the dashboard. Admin password is `admin` for configuration changes.
+- Prometheus scrapes `host.docker.internal:9090` to reach the pipeline running on the host machine from inside Docker.
+
+**Status**: Complete
+
+---
+
+### Task 2.8: Docker packaging (production-ready) — 2026-04-15
+
+**What was done**:
+- `Dockerfile` — production multi-stage build:
+  - Stage 1 (build): installs uv, syncs runtime deps only (`--no-dev`), copies `src/`.
+  - Stage 2 (runtime): python:3.11-slim + DIAMOND via miniforge/bioconda (arm64/x86_64), copies venv + src from build stage, non-root user (`da`), health check, `ENTRYPOINT ["python", "-m", "distributed_alignment"]`.
+- Updated `docker-compose.yml` with full production stack:
+  - `worker` service: builds from production Dockerfile, `restart: on-failure`, `deploy.replicas: 2`, shared volume for work data.
+  - `ingest` service: one-off (`profiles: ["setup"]`), mounts `./data/input` read-only.
+  - `prometheus` and `grafana`: unchanged from Task 2.7 but Prometheus config updated to scrape `worker:9090` (Docker service name) in addition to host fallback.
+  - `dev` service: unchanged, builds from Dockerfile.dev.
+  - `shared-data` named volume shared across all services.
+- Updated `observability/prometheus.yml` to scrape three targets: Docker workers (`worker:9090`), host pipeline (`host.docker.internal:9090`), and Ray dashboard (`host.docker.internal:8265`).
+- Updated `.dockerignore` with additional exclusions (data/, demo/, notebooks/, *.dmnd).
+- Updated `README.md` with complete Docker workflow: build → ingest → workers → monitoring → scale → status.
+
+**Decisions made**:
+- Multi-stage build separates build deps (uv) from runtime. The final image doesn't contain uv or dev dependencies — only Python, DIAMOND, and the project code.
+- Each Docker worker container runs with `--workers 1`. Scaling is via `--scale worker=N`, not `--workers N`. This matches the container orchestration model (each container = one worker, Docker/K8s manages replicas).
+- Non-root user (`da`) for security. The `/data` directory is owned by this user.
+- `restart: on-failure` provides container-level fault tolerance: if a worker crashes (segfault, OOM kill), Docker restarts it. The application-level reaper handles the abandoned packages.
+- Ingest is a `profiles: ["setup"]` service — only runs when explicitly invoked, not on `docker-compose up`.
+- Kept `Dockerfile.dev` as-is — dev needs pytest, mypy, ruff, ray, and source mounting. Production doesn't.
+
+**Status**: Complete
+
+---
+
+### Metrics endpoint wiring and Grafana fixes — 2026-04-15
+
+**What was done**:
+- **Wired `start_metrics_server()` into `WorkerRunner.run()`**: Workers now expose a Prometheus HTTP endpoint on startup. Previously, metrics were tracked in-process but never exposed — Prometheus had nothing to scrape. Added `metrics_port` parameter to `WorkerRunner.__init__`, `run_worker_process()`, and the Ray actor config, threaded through from `cfg.metrics_port` in the CLI.
+- **Fixed Grafana provisioning directory structure**: Grafana expects provisioning config in `provisioning/datasources/` and `provisioning/dashboards/` subdirectories. Moved `datasources.yml` and `dashboards.yml` into their respective subdirectories. Dashboard JSON mounted separately to `/var/lib/grafana/dashboards` (referenced by the provider config).
+- **Fixed `RayMetrics.inc(0)` crash**: `ray.util.metrics.Counter.inc()` rejects `value=0` (unlike prometheus_client). Added `if n > 0` guards in `RayMetrics.inc_sequences()` and `RayMetrics.inc_hits()`. This was causing `ValueError: value must be >0, got 0` in Ray integration tests.
+- **Demonstrated full live pipeline**: Re-ingested with `--chunk-size 10` producing 10 query × 50 reference = 500 work packages. 2 Docker workers processed all 500 packages while Grafana dashboard showed real-time progress: packages by state, active workers, total hits, package duration percentiles, throughput, DIAMOND exit codes, and estimated cost — all updating live.
+
+**End-to-end verified workflow**:
+```
+docker-compose run --rm ingest                          # 500 work packages
+docker-compose up -d prometheus grafana                 # monitoring
+docker-compose up -d worker                             # 2 workers
+open http://localhost:3000/d/da-pipeline                # live dashboard
+```
+
+All 500 packages completed, 0 poisoned, 248 successful DIAMOND alignments, p50 duration ~500ms, estimated cost $0.000110.
+
+**Known limitation**: The "Pipeline Progress" gauge shows "No data" — the PromQL division query requires all four state labels to exist simultaneously in the same scrape. Minor dashboard polish for a future fix.
+
+**Status**: Complete
+
+---
+
+### Task 2.9: GitHub Actions CI/CD — 2026-04-15
+
+**What was done**:
+- `.github/workflows/ci.yml` — 4 CI jobs:
+  1. **quality** (every push/PR): `ruff check`, `ruff format --check`, `mypy --strict`. ~1 min.
+  2. **unit-tests** (every push/PR): `pytest -m "not integration"` with coverage report uploaded as artifact. ~10 min (includes timing-dependent multiworker tests).
+  3. **integration-tests** (main + PRs to main, after quality + unit-tests pass): installs DIAMOND v2.1.10 Linux binary, runs `pytest -m "integration"`. ~15 min.
+  4. **docker-build** (every push/PR, parallel): builds production Dockerfile, verifies `--help` works.
+- `.github/dependabot.yml` — weekly updates for GitHub Actions versions.
+- Applied `ruff format` across entire codebase (24 files reformatted) to ensure `ruff format --check` passes in CI.
+- Added CI badge to README.md.
+
+**Decisions made**:
+- **quality and unit-tests run in parallel** — both fast, independent. integration-tests depends on both (`needs: [quality, unit-tests]`) to avoid wasting CI minutes on heavy DIAMOND tests if basic checks fail.
+- **docker-build runs in parallel** with everything — it's independent and catches Dockerfile issues early.
+- **DIAMOND installed via direct binary download** in integration-tests (not conda) — faster and simpler for CI. The `diamond-linux64.tar.gz` from GitHub releases works on ubuntu-latest's x86_64.
+- **uv cached** via `astral-sh/setup-uv@v4` with `enable-cache: true` for faster dependency installs across runs.
+- **PYTHONPATH=src** set at job-level `env` so all steps inherit it (matches the `package = false` project setup).
+- **Timeout-minutes** on each job: quality 5, unit-tests 15, integration-tests 15, docker-build 10. Prevents hung jobs from burning CI minutes.
+- Integration-tests run on `github.ref == 'refs/heads/main' || github.event_name == 'pull_request'` — runs on PRs to main but not on every branch push.
+
+**Also done**: Applied `ruff format` to normalise code style across all 42 Python files. No functional changes — only formatting (line wrapping, quote style, trailing commas).
+
+**Status**: Complete

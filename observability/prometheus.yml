@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # Pipeline metrics from Docker worker containers
+  - job_name: 'distributed-alignment-docker'
+    static_configs:
+      - targets: ['worker:9090']
+
+  # Pipeline metrics from host (when running outside Docker)
+  - job_name: 'distributed-alignment-host'
+    static_configs:
+      - targets: ['host.docker.internal:9090']
+
+  # Ray metrics (Ray dashboard endpoint)
+  - job_name: 'ray'
+    metrics_path: '/api/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8265']
