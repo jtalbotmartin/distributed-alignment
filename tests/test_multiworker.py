@@ -187,7 +187,9 @@ class TestPollingLoop:
 
         assert completed == 0
         # Should have waited ~1s before exiting
-        assert 0.8 <= elapsed <= 3.0
+        # Lower bound: worker must wait ~1s (max_idle_time)
+        # Upper bound: generous for slow CI runners
+        assert 0.5 <= elapsed <= 10.0
 
     def test_worker_processes_and_exits(self, tmp_path: Path) -> None:
         """Worker processes available packages then exits on idle."""

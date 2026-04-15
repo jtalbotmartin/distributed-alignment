@@ -31,7 +31,7 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
       "targets": [
         {
-          "expr": "da_packages_total{state=\"COMPLETED\"} / (da_packages_total{state=\"COMPLETED\"} + da_packages_total{state=\"PENDING\"} + da_packages_total{state=\"RUNNING\"} + da_packages_total{state=\"POISONED\"}) * 100",
+          "expr": "(da_packages_total{state=\"COMPLETED\"} or vector(0)) / ((da_packages_total{state=\"COMPLETED\"} or vector(0)) + (da_packages_total{state=\"PENDING\"} or vector(0)) + (da_packages_total{state=\"RUNNING\"} or vector(0)) + (da_packages_total{state=\"POISONED\"} or vector(0))) * 100",
           "legendFormat": "Progress"
         }
       ],

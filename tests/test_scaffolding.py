@@ -21,6 +21,18 @@ def test_version() -> None:
     assert __version__ == "0.1.0"
 
 
+def test_main_module_exists() -> None:
+    """__main__.py exists alongside __init__.py."""
+    import importlib
+    from pathlib import Path
+
+    spec = importlib.util.find_spec("distributed_alignment")
+    assert spec is not None
+    assert spec.origin is not None
+    pkg_dir = Path(spec.origin).parent
+    assert (pkg_dir / "__main__.py").exists()
+
+
 def test_config_defaults() -> None:
     config = DistributedAlignmentConfig()
     assert config.chunk_size == 50_000

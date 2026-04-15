@@ -7,7 +7,6 @@ writes each chunk as a Parquet file, and produces a JSON manifest.
 from __future__ import annotations
 
 import hashlib
-import json
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
@@ -175,12 +174,8 @@ def chunk_sequences(
         chunking_strategy="deterministic_hash",
     )
 
-    manifest_path = output_dir / "manifest.json"
-    manifest_path.write_text(json.dumps(manifest.model_dump(mode="json"), indent=2))
-
     logger.info(
-        "manifest_written",
-        path=str(manifest_path),
+        "chunking_manifest_ready",
         num_chunk_files=len(chunk_entries),
     )
 

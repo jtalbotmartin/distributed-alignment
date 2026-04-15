@@ -259,7 +259,7 @@ class TestManifest:
     def test_manifest_written_as_json(self, tmp_path: Path) -> None:
         sequences = _make_sequences(10)
 
-        chunk_sequences(
+        manifest = chunk_sequences(
             sequences,
             num_chunks=2,
             output_dir=tmp_path,
@@ -268,11 +268,8 @@ class TestManifest:
             input_files=["test.fasta"],
         )
 
-        manifest_path = tmp_path / "manifest.json"
-        assert manifest_path.exists()
-
-        data = json.loads(manifest_path.read_text())
-        # Verify the JSON can be loaded back into the model
+        # Verify the returned manifest is serialisable and round-trips
+        data = json.loads(json.dumps(manifest.model_dump(mode="json")))
         loaded = ChunkManifest(**data)
         assert loaded.run_id == "json_test"
         assert loaded.total_sequences == 10
