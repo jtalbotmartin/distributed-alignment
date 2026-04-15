@@ -69,11 +69,12 @@ def _slow_worker_target(
     ) -> DiamondResult:
         time.sleep(delay)
         Path(str(output_path)).write_text(
-            "seq_0001\tref_0001\t85.0\t100\t15\t0"
-            "\t1\t100\t1\t100\t1e-30\t200.0\n"
+            "seq_0001\tref_0001\t85.0\t100\t15\t0\t1\t100\t1\t100\t1e-30\t200.0\n"
         )
         return DiamondResult(
-            exit_code=0, duration_seconds=delay, stderr="",
+            exit_code=0,
+            duration_seconds=delay,
+            stderr="",
             output_path=str(output_path),
         )
 
@@ -179,9 +180,7 @@ def _setup_work(
     return stack, chunks_dir, tmp_path / "results"
 
 
-def _make_mock_diamond(
-    *, delay: float = 0.0
-) -> DiamondWrapper:
+def _make_mock_diamond(*, delay: float = 0.0) -> DiamondWrapper:
     mock = MagicMock(spec=DiamondWrapper)
     mock.make_db.return_value = DiamondResult(
         exit_code=0, duration_seconds=0.01, stderr=""
@@ -196,11 +195,12 @@ def _make_mock_diamond(
         if delay > 0:
             time.sleep(delay)
         Path(str(output_path)).write_text(
-            "seq_0001\tref_0001\t85.0\t100\t15\t0"
-            "\t1\t100\t1\t100\t1e-30\t200.0\n"
+            "seq_0001\tref_0001\t85.0\t100\t15\t0\t1\t100\t1\t100\t1e-30\t200.0\n"
         )
         return DiamondResult(
-            exit_code=0, duration_seconds=delay, stderr="",
+            exit_code=0,
+            duration_seconds=delay,
+            stderr="",
             output_path=str(output_path),
         )
 
@@ -241,12 +241,8 @@ def _wait_for(
 class TestWorkerSIGKILLDuringAlignment:
     """Kill a worker mid-alignment, verify recovery."""
 
-    def test_sigkill_during_processing(
-        self, tmp_path: Path
-    ) -> None:
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=4, num_r=1
-        )
+    def test_sigkill_during_processing(self, tmp_path: Path) -> None:
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=4, num_r=1)
         work_dir = tmp_path / "work"
 
         # Spawn 2 slow workers (3s per package)
@@ -305,9 +301,7 @@ class TestSimulatedOOM:
 
     def test_oom_then_success(self, tmp_path: Path) -> None:
         """Fails twice with OOM, succeeds on 3rd attempt."""
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=1, num_r=1
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=1, num_r=1)
 
         call_count = 0
 
@@ -327,11 +321,12 @@ class TestSimulatedOOM:
                     error_message="DIAMOND killed by OOM (exit code 137).",
                 )
             Path(str(output_path)).write_text(
-                "seq_0001\tref_0001\t85.0\t100\t15\t0"
-                "\t1\t100\t1\t100\t1e-30\t200.0\n"
+                "seq_0001\tref_0001\t85.0\t100\t15\t0\t1\t100\t1\t100\t1e-30\t200.0\n"
             )
             return DiamondResult(
-                exit_code=0, duration_seconds=0.1, stderr="",
+                exit_code=0,
+                duration_seconds=0.1,
+                stderr="",
                 output_path=str(output_path),
             )
 
@@ -355,17 +350,13 @@ class TestSimulatedOOM:
 
         # Check error history
         completed_dir = tmp_path / "work" / "completed"
-        data = json.loads(
-            list(completed_dir.glob("*.json"))[0].read_text()
-        )
+        data = json.loads(list(completed_dir.glob("*.json"))[0].read_text())
         assert len(data["error_history"]) == 2
         assert all("137" in e or "OOM" in e for e in data["error_history"])
 
     def test_oom_exhausts_retries(self, tmp_path: Path) -> None:
         """Always OOM → package poisoned."""
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=1, num_r=1
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=1, num_r=1)
 
         mock = MagicMock(spec=DiamondWrapper)
         mock.make_db.return_value = DiamondResult(
@@ -395,9 +386,7 @@ class TestIntermittentFailures:
     """DIAMOND fails every other call — all packages eventually succeed."""
 
     def test_alternating_failures(self, tmp_path: Path) -> None:
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=4, num_r=1
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=4, num_r=1)
 
         call_count = 0
 
@@ -417,11 +406,12 @@ class TestIntermittentFailures:
                     error_message="Transient DIAMOND failure",
                 )
             Path(str(output_path)).write_text(
-                "seq_0001\tref_0001\t85.0\t100\t15\t0"
-                "\t1\t100\t1\t100\t1e-30\t200.0\n"
+                "seq_0001\tref_0001\t85.0\t100\t15\t0\t1\t100\t1\t100\t1e-30\t200.0\n"
             )
             return DiamondResult(
-                exit_code=0, duration_seconds=0.01, stderr="",
+                exit_code=0,
+                duration_seconds=0.01,
+                stderr="",
                 output_path=str(output_path),
             )
 
@@ -458,9 +448,7 @@ class TestCorruptWorkPackage:
     """Corrupt JSON in pending/ — worker skips it gracefully."""
 
     def test_corrupt_json_skipped(self, tmp_path: Path) -> None:
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=1, num_r=1
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=1, num_r=1)
         work_dir = tmp_path / "work"
 
         # Write a corrupt JSON file into pending/
@@ -484,16 +472,12 @@ class TestCorruptWorkPackage:
         # Corrupt file should be in poisoned/ (not stuck in pending/
         # or running/)
         assert not corrupt.exists()
-        poisoned_files = list(
-            (work_dir / "poisoned").glob("wp_corrupt*")
-        )
+        poisoned_files = list((work_dir / "poisoned").glob("wp_corrupt*"))
         assert len(poisoned_files) == 1
 
     def test_wrong_schema_skipped(self, tmp_path: Path) -> None:
         """Valid JSON but wrong schema → treated as corrupt."""
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=1, num_r=1
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=1, num_r=1)
         work_dir = tmp_path / "work"
 
         # Valid JSON, wrong schema
@@ -517,12 +501,8 @@ class TestCorruptWorkPackage:
 class TestResultWriteFailure:
     """Simulated disk full — Parquet write fails."""
 
-    def test_write_failure_fails_package(
-        self, tmp_path: Path
-    ) -> None:
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=2, num_r=1
-        )
+    def test_write_failure_fails_package(self, tmp_path: Path) -> None:
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=2, num_r=1)
 
         call_count = 0
 
@@ -535,11 +515,12 @@ class TestResultWriteFailure:
             nonlocal call_count
             call_count += 1
             Path(str(output_path)).write_text(
-                "seq_0001\tref_0001\t85.0\t100\t15\t0"
-                "\t1\t100\t1\t100\t1e-30\t200.0\n"
+                "seq_0001\tref_0001\t85.0\t100\t15\t0\t1\t100\t1\t100\t1e-30\t200.0\n"
             )
             return DiamondResult(
-                exit_code=0, duration_seconds=0.01, stderr="",
+                exit_code=0,
+                duration_seconds=0.01,
+                stderr="",
                 output_path=str(output_path),
             )
 
@@ -587,9 +568,7 @@ class TestAllWorkersDieThenRestart:
     """All workers die, new workers start and recover."""
 
     def test_full_cluster_restart(self, tmp_path: Path) -> None:
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=4, num_r=1
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=4, num_r=1)
         work_dir = tmp_path / "work"
 
         # Spawn 2 slow workers

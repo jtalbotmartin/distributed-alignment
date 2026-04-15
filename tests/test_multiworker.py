@@ -105,9 +105,7 @@ def _make_manifests(
     return q, r
 
 
-def _make_mock_diamond(
-    *, delay: float = 0.0
-) -> DiamondWrapper:
+def _make_mock_diamond(*, delay: float = 0.0) -> DiamondWrapper:
     """Create a mock DiamondWrapper with optional processing delay."""
     mock = MagicMock(spec=DiamondWrapper)
     mock.make_db.return_value = DiamondResult(
@@ -123,8 +121,7 @@ def _make_mock_diamond(
         if delay > 0:
             time.sleep(delay)
         output_path.write_text(
-            "seq_0001\tref_0001\t85.0\t100\t15\t0"
-            "\t1\t100\t1\t100\t1e-30\t200.0\n"
+            "seq_0001\tref_0001\t85.0\t100\t15\t0\t1\t100\t1\t100\t1e-30\t200.0\n"
         )
         return DiamondResult(
             exit_code=0,
@@ -192,13 +189,9 @@ class TestPollingLoop:
         # Should have waited ~1s before exiting
         assert 0.8 <= elapsed <= 3.0
 
-    def test_worker_processes_and_exits(
-        self, tmp_path: Path
-    ) -> None:
+    def test_worker_processes_and_exits(self, tmp_path: Path) -> None:
         """Worker processes available packages then exits on idle."""
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=1, num_r=1
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=1, num_r=1)
         diamond = _make_mock_diamond(delay=0.05)
 
         runner = WorkerRunner(
@@ -214,9 +207,7 @@ class TestPollingLoop:
         assert completed == 1
         assert stack.status()["COMPLETED"] == 1
 
-    def test_shutdown_signal_stops_worker(
-        self, tmp_path: Path
-    ) -> None:
+    def test_shutdown_signal_stops_worker(self, tmp_path: Path) -> None:
         """request_shutdown() stops the worker mid-poll."""
         stack = FileSystemWorkStack(tmp_path / "work")
         diamond = _make_mock_diamond()
@@ -253,9 +244,7 @@ class TestMultiWorker:
 
     def test_all_packages_completed(self, tmp_path: Path) -> None:
         """4 workers processing 8 packages → all 8 completed."""
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=4, num_r=2
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=4, num_r=2)
 
         assert stack.pending_count() == 8
 
@@ -280,9 +269,7 @@ class TestMultiWorker:
 
     def test_no_duplicate_claims(self, tmp_path: Path) -> None:
         """Each package_id appears exactly once in completed/."""
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=3, num_r=2
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=3, num_r=2)
 
         for _ in range(3):
             diamond = _make_mock_diamond()
@@ -307,13 +294,9 @@ class TestMultiWorker:
 class TestWorkerDeathRecovery:
     """Tests for fault tolerance: dead worker → reaper → recovery."""
 
-    def test_dead_worker_package_recovered(
-        self, tmp_path: Path
-    ) -> None:
+    def test_dead_worker_package_recovered(self, tmp_path: Path) -> None:
         """Worker A dies. Worker B's reaper reclaims the package."""
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=1, num_r=1
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=1, num_r=1)
         work_dir = tmp_path / "work"
 
         # Worker A claims and "dies" (stale heartbeat)
@@ -352,13 +335,9 @@ class TestMultiprocessWorkerDeath:
     testing. Needs generous timeouts to avoid flakiness.
     """
 
-    def test_killed_worker_package_recovered(
-        self, tmp_path: Path
-    ) -> None:
+    def test_killed_worker_package_recovered(self, tmp_path: Path) -> None:
         """SIGKILL a worker process, verify another recovers its work."""
-        stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=2, num_r=1
-        )
+        stack, chunks_dir, results_dir = _setup_work(tmp_path, num_q=2, num_r=1)
         work_dir = tmp_path / "work"
 
         # Start the slow worker and let it claim a package

@@ -36,11 +36,7 @@ class TestMetricDefinitions:
         # Force creation of PrometheusMetrics
         get_metrics()
 
-        names = {
-            m.name
-            for m in REGISTRY.collect()
-            if m.name.startswith("da_")
-        }
+        names = {m.name for m in REGISTRY.collect() if m.name.startswith("da_")}
         assert "da_packages_total" in names
         assert "da_package_duration_seconds" in names
         assert "da_sequences_processed" in names
@@ -73,35 +69,23 @@ class TestRecordPackageCompleted:
     """Tests for the record_package_completed helper."""
 
     def test_updates_histogram(self) -> None:
-        record_package_completed(
-            duration_seconds=5.5, num_sequences=100, num_hits=50
-        )
+        record_package_completed(duration_seconds=5.5, num_sequences=100, num_hits=50)
 
-        sample = REGISTRY.get_sample_value(
-            "da_package_duration_seconds_sum"
-        )
+        sample = REGISTRY.get_sample_value("da_package_duration_seconds_sum")
         assert sample is not None
         assert sample >= 5.5
 
     def test_updates_sequence_counter(self) -> None:
-        record_package_completed(
-            duration_seconds=1.0, num_sequences=200, num_hits=10
-        )
+        record_package_completed(duration_seconds=1.0, num_sequences=200, num_hits=10)
 
-        sample = REGISTRY.get_sample_value(
-            "da_sequences_processed_total"
-        )
+        sample = REGISTRY.get_sample_value("da_sequences_processed_total")
         assert sample is not None
         assert sample >= 200
 
     def test_updates_hit_counter(self) -> None:
-        record_package_completed(
-            duration_seconds=1.0, num_sequences=10, num_hits=75
-        )
+        record_package_completed(duration_seconds=1.0, num_sequences=10, num_hits=75)
 
-        sample = REGISTRY.get_sample_value(
-            "da_hits_found_total"
-        )
+        sample = REGISTRY.get_sample_value("da_hits_found_total")
         assert sample is not None
         assert sample >= 75
 
@@ -163,36 +147,25 @@ class TestUpdatePackageStates:
     """Tests for the update_package_states helper."""
 
     def test_sets_gauge_values(self) -> None:
-        update_package_states({
-            "PENDING": 5,
-            "RUNNING": 2,
-            "COMPLETED": 10,
-            "POISONED": 1,
-        })
-
-        assert (
-            REGISTRY.get_sample_value(
-                "da_packages_total", {"state": "PENDING"}
-            )
-            == 5
+        update_package_states(
+            {
+                "PENDING": 5,
+                "RUNNING": 2,
+                "COMPLETED": 10,
+                "POISONED": 1,
+            }
         )
+
+        assert REGISTRY.get_sample_value("da_packages_total", {"state": "PENDING"}) == 5
         assert (
-            REGISTRY.get_sample_value(
-                "da_packages_total", {"state": "COMPLETED"}
-            )
-            == 10
+            REGISTRY.get_sample_value("da_packages_total", {"state": "COMPLETED"}) == 10
         )
 
     def test_updates_overwrite_previous(self) -> None:
         update_package_states({"PENDING": 10, "COMPLETED": 0})
         update_package_states({"PENDING": 3, "COMPLETED": 7})
 
-        assert (
-            REGISTRY.get_sample_value(
-                "da_packages_total", {"state": "PENDING"}
-            )
-            == 3
-        )
+        assert REGISTRY.get_sample_value("da_packages_total", {"state": "PENDING"}) == 3
 
 
 class TestMetricsServer:
@@ -219,9 +192,7 @@ class TestMetricsServer:
 class TestWorkerRunnerMetrics:
     """Integration: metrics emitted during package processing."""
 
-    def test_metrics_updated_after_processing(
-        self, tmp_path: Path
-    ) -> None:
+    def test_metrics_updated_after_processing(self, tmp_path: Path) -> None:
         from datetime import UTC, datetime
         from unittest.mock import MagicMock
 
@@ -323,8 +294,7 @@ class TestWorkerRunnerMetrics:
             **kwargs: object,
         ) -> DiamondResult:
             _Path(str(output_path)).write_text(
-                "seq_0001\tref_0001\t85.0\t100\t15\t0"
-                "\t1\t100\t1\t100\t1e-30\t200.0\n"
+                "seq_0001\tref_0001\t85.0\t100\t15\t0\t1\t100\t1\t100\t1e-30\t200.0\n"
             )
             return DiamondResult(
                 exit_code=0,
@@ -347,9 +317,7 @@ class TestWorkerRunnerMetrics:
         assert completed == 1
 
         # Verify metrics
-        duration_sum = REGISTRY.get_sample_value(
-            "da_package_duration_seconds_sum"
-        )
+        duration_sum = REGISTRY.get_sample_value("da_package_duration_seconds_sum")
         assert duration_sum is not None and duration_sum > 0
 
         diamond_ok = REGISTRY.get_sample_value(

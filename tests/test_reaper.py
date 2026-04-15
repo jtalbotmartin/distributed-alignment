@@ -69,9 +69,7 @@ def _make_manifests(
     return q, r
 
 
-def _make_package_stale(
-    tmp_path: Path, package_id: str, age_seconds: float
-) -> None:
+def _make_package_stale(tmp_path: Path, package_id: str, age_seconds: float) -> None:
     """Set a running package's heartbeat_at to the past."""
     path = tmp_path / "running" / f"{package_id}.json"
     data = json.loads(path.read_text())
@@ -83,9 +81,7 @@ def _make_package_stale(
 class TestReapStaleBasics:
     """Tests for FileSystemWorkStack.reap_stale()."""
 
-    def test_stale_package_moved_to_pending(
-        self, tmp_path: Path
-    ) -> None:
+    def test_stale_package_moved_to_pending(self, tmp_path: Path) -> None:
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests()
         stack.generate_work_packages(q, r)
@@ -100,9 +96,7 @@ class TestReapStaleBasics:
         assert stack.status()["RUNNING"] == 0
         assert stack.status()["PENDING"] == 1
 
-    def test_stale_package_attempt_incremented(
-        self, tmp_path: Path
-    ) -> None:
+    def test_stale_package_attempt_incremented(self, tmp_path: Path) -> None:
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests()
         stack.generate_work_packages(q, r)
@@ -118,9 +112,7 @@ class TestReapStaleBasics:
         assert reclaimed is not None
         assert reclaimed.attempt == 1
 
-    def test_stale_package_has_error_history(
-        self, tmp_path: Path
-    ) -> None:
+    def test_stale_package_has_error_history(self, tmp_path: Path) -> None:
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests()
         stack.generate_work_packages(q, r)
@@ -150,9 +142,7 @@ class TestReapStaleBasics:
         assert reaped == []
         assert stack.status()["RUNNING"] == 1
 
-    def test_null_heartbeat_treated_as_stale(
-        self, tmp_path: Path
-    ) -> None:
+    def test_null_heartbeat_treated_as_stale(self, tmp_path: Path) -> None:
         """Package with heartbeat_at=None is considered stale."""
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests()
@@ -172,9 +162,7 @@ class TestReapStaleBasics:
         assert reaped == [pkg.package_id]
         assert stack.status()["PENDING"] == 1
 
-    def test_max_attempts_exhausted_goes_to_poisoned(
-        self, tmp_path: Path
-    ) -> None:
+    def test_max_attempts_exhausted_goes_to_poisoned(self, tmp_path: Path) -> None:
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests()
         stack.generate_work_packages(q, r, max_attempts=1)
@@ -217,9 +205,7 @@ class TestReapStaleBasics:
 class TestReapStaleRaceConditions:
     """Tests for race condition handling in reap_stale."""
 
-    def test_file_disappears_between_listing_and_reading(
-        self, tmp_path: Path
-    ) -> None:
+    def test_file_disappears_between_listing_and_reading(self, tmp_path: Path) -> None:
         """Simulate a worker completing a package during reap scan."""
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests(num_q=2, num_r=1)
@@ -245,9 +231,7 @@ class TestReapStaleRaceConditions:
 class TestReaperThread:
     """Tests for the ReaperThread context manager."""
 
-    def test_reaper_detects_stale_package(
-        self, tmp_path: Path
-    ) -> None:
+    def test_reaper_detects_stale_package(self, tmp_path: Path) -> None:
         """With short interval, reaper catches stale packages."""
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests()
@@ -257,24 +241,18 @@ class TestReaperThread:
         assert pkg is not None
         _make_package_stale(tmp_path, pkg.package_id, 300)
 
-        with ReaperThread(
-            stack, timeout_seconds=1, interval=0.05
-        ):
+        with ReaperThread(stack, timeout_seconds=1, interval=0.05):
             # Give the reaper a few cycles to detect the stale package
             time.sleep(0.3)
 
         assert stack.status()["RUNNING"] == 0
         assert stack.status()["PENDING"] == 1
 
-    def test_stops_cleanly_on_context_exit(
-        self, tmp_path: Path
-    ) -> None:
+    def test_stops_cleanly_on_context_exit(self, tmp_path: Path) -> None:
         stack = FileSystemWorkStack(tmp_path)
 
         reaper: ReaperThread
-        with ReaperThread(
-            stack, timeout_seconds=60, interval=0.05
-        ) as reaper:
+        with ReaperThread(stack, timeout_seconds=60, interval=0.05) as reaper:
             time.sleep(0.1)
             assert reaper.is_alive
 
@@ -299,9 +277,7 @@ class TestReaperThread:
 class TestWorkerRunnerWithReaper:
     """Integration: reaper reclaims a dead worker's package."""
 
-    def test_reaper_reclaims_dead_worker_package(
-        self, tmp_path: Path
-    ) -> None:
+    def test_reaper_reclaims_dead_worker_package(self, tmp_path: Path) -> None:
         """Worker A claims and dies. Worker B's reaper reclaims it."""
         from distributed_alignment.ingest.chunker import chunk_sequences
 
@@ -342,9 +318,7 @@ class TestWorkerRunnerWithReaper:
         # Worker A claims the package and "dies" (stale heartbeat)
         pkg = stack.claim("worker-A-dead")
         assert pkg is not None
-        _make_package_stale(
-            tmp_path / "work", pkg.package_id, 300
-        )
+        _make_package_stale(tmp_path / "work", pkg.package_id, 300)
         assert stack.pending_count() == 0
         assert stack.status()["RUNNING"] == 1
 
@@ -361,8 +335,7 @@ class TestWorkerRunnerWithReaper:
             **kwargs: object,
         ) -> DiamondResult:
             output_path.write_text(
-                "seq_0001\tref_0001\t85.0\t100\t15\t0"
-                "\t1\t100\t1\t100\t1e-30\t200.0\n"
+                "seq_0001\tref_0001\t85.0\t100\t15\t0\t1\t100\t1\t100\t1e-30\t200.0\n"
             )
             return DiamondResult(
                 exit_code=0,
@@ -377,9 +350,7 @@ class TestWorkerRunnerWithReaper:
         # In production, the reaper runs inside the worker loop, but
         # the worker loop exits immediately if nothing is pending.
         # So we run the reaper first, then the worker.
-        with ReaperThread(
-            stack, timeout_seconds=1, interval=0.05
-        ):
+        with ReaperThread(stack, timeout_seconds=1, interval=0.05):
             # Wait for the reaper to detect and reclaim
             for _ in range(20):
                 if stack.pending_count() > 0:

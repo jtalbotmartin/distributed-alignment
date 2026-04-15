@@ -101,9 +101,7 @@ def chunk_sequences(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Accumulate sequences per chunk bucket
-    buckets: dict[int, list[ProteinSequence]] = {
-        i: [] for i in range(num_chunks)
-    }
+    buckets: dict[int, list[ProteinSequence]] = {i: [] for i in range(num_chunks)}
     total_sequences = 0
 
     for seq in sequences:
@@ -142,9 +140,7 @@ def chunk_sequences(
                 "description": [s.description for s in bucket],
                 "sequence": [s.sequence for s in bucket],
                 "length": [s.length for s in bucket],
-                "content_hash": [
-                    sequence_content_hash(s.sequence) for s in bucket
-                ],
+                "content_hash": [sequence_content_hash(s.sequence) for s in bucket],
             },
             schema=CHUNK_SCHEMA,
         )
@@ -180,9 +176,7 @@ def chunk_sequences(
     )
 
     manifest_path = output_dir / "manifest.json"
-    manifest_path.write_text(
-        json.dumps(manifest.model_dump(mode="json"), indent=2)
-    )
+    manifest_path.write_text(json.dumps(manifest.model_dump(mode="json"), indent=2))
 
     logger.info(
         "manifest_written",

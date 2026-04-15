@@ -95,9 +95,7 @@ class TestDiamondResult:
     """Tests for the DiamondResult dataclass."""
 
     def test_success_result(self) -> None:
-        result = DiamondResult(
-            exit_code=0, duration_seconds=1.5, stderr=""
-        )
+        result = DiamondResult(exit_code=0, duration_seconds=1.5, stderr="")
         assert result.exit_code == 0
         assert result.error_message is None
 

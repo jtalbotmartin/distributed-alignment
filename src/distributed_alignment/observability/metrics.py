@@ -18,7 +18,9 @@ logger = structlog.get_logger(component="metrics")
 # --- Module-level prometheus_client metrics (registered once) ---
 
 _prom_packages_total = _Gauge(
-    "da_packages_total", "Work packages by state", ["state"],
+    "da_packages_total",
+    "Work packages by state",
+    ["state"],
 )
 _prom_package_duration = _Histogram(
     "da_package_duration_seconds",
@@ -26,19 +28,26 @@ _prom_package_duration = _Histogram(
     buckets=[1, 5, 10, 30, 60, 120, 300, 600],
 )
 _prom_sequences_processed = _Counter(
-    "da_sequences_processed", "Total sequences aligned",
+    "da_sequences_processed",
+    "Total sequences aligned",
 )
 _prom_hits_found = _Counter(
-    "da_hits_found", "Total alignment hits found",
+    "da_hits_found",
+    "Total alignment hits found",
 )
 _prom_worker_count = _Gauge(
-    "da_worker_count", "Number of active workers",
+    "da_worker_count",
+    "Number of active workers",
 )
 _prom_errors = _Counter(
-    "da_errors", "Errors by type", ["error_type"],
+    "da_errors",
+    "Errors by type",
+    ["error_type"],
 )
 _prom_diamond_exit_code = _Counter(
-    "da_diamond_exit_code", "DIAMOND exit codes", ["exit_code"],
+    "da_diamond_exit_code",
+    "DIAMOND exit codes",
+    ["exit_code"],
 )
 
 
@@ -77,9 +86,7 @@ class PrometheusMetrics:
         self.errors.labels(error_type=error_type).inc()
 
     def inc_diamond_exit(self, exit_code: int) -> None:
-        self.diamond_exit_code.labels(
-            exit_code=str(exit_code)
-        ).inc()
+        self.diamond_exit_code.labels(exit_code=str(exit_code)).inc()
 
     def set_package_state(self, state: str, count: int) -> None:
         self.packages_total.labels(state=state).set(count)
@@ -153,9 +160,7 @@ class RayMetrics:
         self.errors.inc(tags={"error_type": error_type})
 
     def inc_diamond_exit(self, exit_code: int) -> None:
-        self.diamond_exit_code.inc(
-            tags={"exit_code": str(exit_code)}
-        )
+        self.diamond_exit_code.inc(tags={"exit_code": str(exit_code)})
 
     def set_package_state(self, state: str, count: int) -> None:
         self.packages_total.set(count, tags={"state": state})

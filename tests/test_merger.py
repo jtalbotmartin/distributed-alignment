@@ -31,20 +31,23 @@ def _write_result_parquet(
     if not rows:
         # Empty table with correct schema
         table = pa.table(
-            {name: pa.array([], type=dtype) for name, dtype in [
-                ("qseqid", pa.string()),
-                ("sseqid", pa.string()),
-                ("pident", pa.float64()),
-                ("length", pa.int32()),
-                ("mismatch", pa.int32()),
-                ("gapopen", pa.int32()),
-                ("qstart", pa.int32()),
-                ("qend", pa.int32()),
-                ("sstart", pa.int32()),
-                ("send", pa.int32()),
-                ("evalue", pa.float64()),
-                ("bitscore", pa.float64()),
-            ]},
+            {
+                name: pa.array([], type=dtype)
+                for name, dtype in [
+                    ("qseqid", pa.string()),
+                    ("sseqid", pa.string()),
+                    ("pident", pa.float64()),
+                    ("length", pa.int32()),
+                    ("mismatch", pa.int32()),
+                    ("gapopen", pa.int32()),
+                    ("qstart", pa.int32()),
+                    ("qend", pa.int32()),
+                    ("sstart", pa.int32()),
+                    ("send", pa.int32()),
+                    ("evalue", pa.float64()),
+                    ("bitscore", pa.float64()),
+                ]
+            },
             schema=DIAMOND_SCHEMA,
         )
     else:
@@ -189,21 +192,15 @@ class TestDeduplication:
         assert table.num_rows == 1
         assert table.column("evalue")[0].as_py() == pytest.approx(1e-40)
 
-    def test_dedup_different_queries_not_affected(
-        self, tmp_path: Path
-    ) -> None:
+    def test_dedup_different_queries_not_affected(self, tmp_path: Path) -> None:
         """Different queries hitting the same subject are NOT deduped."""
         results_dir = tmp_path / "results"
 
         _write_result_parquet(
             results_dir / "q000_r000.parquet",
             [
-                _make_hit(
-                    qseqid="query_A", sseqid="ref_shared", evalue=1e-20
-                ),
-                _make_hit(
-                    qseqid="query_B", sseqid="ref_shared", evalue=1e-30
-                ),
+                _make_hit(qseqid="query_A", sseqid="ref_shared", evalue=1e-20),
+                _make_hit(qseqid="query_B", sseqid="ref_shared", evalue=1e-30),
             ],
         )
 
@@ -228,8 +225,7 @@ class TestTopN:
         results_dir = tmp_path / "results"
 
         hits = [
-            _make_hit(sseqid=f"ref_{i:03d}", evalue=10.0 ** (-i * 5))
-            for i in range(8)
+            _make_hit(sseqid=f"ref_{i:03d}", evalue=10.0 ** (-i * 5)) for i in range(8)
         ]
         _write_result_parquet(results_dir / "q000_r000.parquet", hits)
 
@@ -290,9 +286,7 @@ class TestTopN:
 class TestSchema:
     """Tests for output schema validation."""
 
-    def test_output_schema_matches_merged_hit(
-        self, tmp_path: Path
-    ) -> None:
+    def test_output_schema_matches_merged_hit(self, tmp_path: Path) -> None:
         results_dir = tmp_path / "results"
         _write_result_parquet(
             results_dir / "q000_r000.parquet",
@@ -328,11 +322,21 @@ class TestSchema:
 
         table = pq.read_table(output_dir / "merged_q000.parquet")
         expected_cols = [
-            "query_id", "subject_id", "percent_identity",
-            "alignment_length", "mismatches", "gap_opens",
-            "query_start", "query_end", "subject_start", "subject_end",
-            "evalue", "bitscore", "global_rank",
-            "query_chunk_id", "ref_chunk_id",
+            "query_id",
+            "subject_id",
+            "percent_identity",
+            "alignment_length",
+            "mismatches",
+            "gap_opens",
+            "query_start",
+            "query_end",
+            "subject_start",
+            "subject_end",
+            "evalue",
+            "bitscore",
+            "global_rank",
+            "query_chunk_id",
+            "ref_chunk_id",
         ]
         assert table.column_names == expected_cols
 
@@ -401,9 +405,7 @@ class TestIncompleteMerge:
 class TestEmptyResults:
     """Tests for empty result files."""
 
-    def test_all_empty_results_produce_empty_output(
-        self, tmp_path: Path
-    ) -> None:
+    def test_all_empty_results_produce_empty_output(self, tmp_path: Path) -> None:
         """All result files exist but have zero rows → valid empty Parquet."""
         results_dir = tmp_path / "results"
         _write_result_parquet(results_dir / "q000_r000.parquet", [])

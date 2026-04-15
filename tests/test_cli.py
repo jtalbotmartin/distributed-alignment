@@ -104,15 +104,11 @@ class TestIngest:
         assert (output_dir / "ref_manifest.json").exists()
 
         # Verify manifest is valid JSON with expected fields
-        q_manifest = json.loads(
-            (output_dir / "query_manifest.json").read_text()
-        )
+        q_manifest = json.loads((output_dir / "query_manifest.json").read_text())
         assert q_manifest["total_sequences"] == 3
         assert q_manifest["chunking_strategy"] == "deterministic_hash"
 
-    def test_ingest_prints_summary(
-        self, sample_fasta: Path, tmp_path: Path
-    ) -> None:
+    def test_ingest_prints_summary(self, sample_fasta: Path, tmp_path: Path) -> None:
         output_dir = tmp_path / "work"
 
         result = runner.invoke(
@@ -149,12 +145,8 @@ class TestIngest:
             ],
         )
 
-        q_chunks = list(
-            (output_dir / "chunks" / "queries").glob("chunk_*.parquet")
-        )
-        r_chunks = list(
-            (output_dir / "chunks" / "references").glob("chunk_*.parquet")
-        )
+        q_chunks = list((output_dir / "chunks" / "queries").glob("chunk_*.parquet"))
+        r_chunks = list((output_dir / "chunks" / "references").glob("chunk_*.parquet"))
         assert len(q_chunks) >= 1
         assert len(r_chunks) >= 1
 
@@ -163,15 +155,11 @@ class TestStatus:
     """Tests for the status subcommand."""
 
     def test_status_no_data(self, tmp_path: Path) -> None:
-        result = runner.invoke(
-            app, ["status", "--work-dir", str(tmp_path)]
-        )
+        result = runner.invoke(app, ["status", "--work-dir", str(tmp_path)])
         assert result.exit_code == 1
         assert "No pipeline data found" in result.output
 
-    def test_status_after_ingest(
-        self, sample_fasta: Path, tmp_path: Path
-    ) -> None:
+    def test_status_after_ingest(self, sample_fasta: Path, tmp_path: Path) -> None:
         output_dir = tmp_path / "work"
 
         # Run ingest first
@@ -189,9 +177,7 @@ class TestStatus:
         )
 
         # Check status
-        result = runner.invoke(
-            app, ["status", "--work-dir", str(output_dir)]
-        )
+        result = runner.invoke(app, ["status", "--work-dir", str(output_dir)])
         assert result.exit_code == 0
         assert "3 sequences" in result.output
 
@@ -200,9 +186,7 @@ class TestRunValidation:
     """Tests for run command validation (no DIAMOND needed)."""
 
     def test_run_no_manifests(self, tmp_path: Path) -> None:
-        result = runner.invoke(
-            app, ["run", "--work-dir", str(tmp_path)]
-        )
+        result = runner.invoke(app, ["run", "--work-dir", str(tmp_path)])
         assert result.exit_code == 1
         assert "manifests not found" in result.output
 

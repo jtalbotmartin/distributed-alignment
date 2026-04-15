@@ -53,15 +53,11 @@ def ingest(
 
     cfg = load_config(overrides={"chunk_size": chunk_size})
 
-    effective_output = (
-        output_dir.resolve() if output_dir else cfg.work_dir.resolve()
-    )
+    effective_output = output_dir.resolve() if output_dir else cfg.work_dir.resolve()
     effective_chunk_size = cfg.chunk_size
 
     run_id = _generate_run_id()
-    configure_logging(
-        level=cfg.log_level, run_id=run_id, json_output=False
-    )
+    configure_logging(level=cfg.log_level, run_id=run_id, json_output=False)
 
     # Count sequences to determine chunk count
     typer.echo(f"Counting query sequences from {queries}...")
@@ -71,19 +67,15 @@ def ingest(
 
     q_num_chunks = max(
         1,
-        q_count // effective_chunk_size
-        + (1 if q_count % effective_chunk_size else 0),
+        q_count // effective_chunk_size + (1 if q_count % effective_chunk_size else 0),
     )
     r_num_chunks = max(
         1,
-        r_count // effective_chunk_size
-        + (1 if r_count % effective_chunk_size else 0),
+        r_count // effective_chunk_size + (1 if r_count % effective_chunk_size else 0),
     )
 
     # Chunk queries
-    typer.echo(
-        f"Chunking {q_count} queries into {q_num_chunks} chunks..."
-    )
+    typer.echo(f"Chunking {q_count} queries into {q_num_chunks} chunks...")
     q_chunks_dir = effective_output / "chunks" / "queries"
     q_manifest = chunk_sequences(
         parse_fasta(queries),
@@ -95,9 +87,7 @@ def ingest(
     )
 
     # Chunk references
-    typer.echo(
-        f"Chunking {r_count} references into {r_num_chunks} chunks..."
-    )
+    typer.echo(f"Chunking {r_count} references into {r_num_chunks} chunks...")
     r_chunks_dir = effective_output / "chunks" / "references"
     r_manifest = chunk_sequences(
         parse_fasta(reference),
@@ -111,23 +101,13 @@ def ingest(
     # Write manifests
     q_manifest_path = effective_output / "query_manifest.json"
     r_manifest_path = effective_output / "ref_manifest.json"
-    q_manifest_path.write_text(
-        json.dumps(q_manifest.model_dump(mode="json"), indent=2)
-    )
-    r_manifest_path.write_text(
-        json.dumps(r_manifest.model_dump(mode="json"), indent=2)
-    )
+    q_manifest_path.write_text(json.dumps(q_manifest.model_dump(mode="json"), indent=2))
+    r_manifest_path.write_text(json.dumps(r_manifest.model_dump(mode="json"), indent=2))
 
     typer.echo("")
     typer.echo(f"Ingestion complete (run_id: {run_id})")
-    typer.echo(
-        f"  Queries:    {q_count} sequences "
-        f"→ {len(q_manifest.chunks)} chunks"
-    )
-    typer.echo(
-        f"  References: {r_count} sequences "
-        f"→ {len(r_manifest.chunks)} chunks"
-    )
+    typer.echo(f"  Queries:    {q_count} sequences → {len(q_manifest.chunks)} chunks")
+    typer.echo(f"  References: {r_count} sequences → {len(r_manifest.chunks)} chunks")
     typer.echo(f"  Output:     {effective_output}")
 
 
@@ -174,9 +154,7 @@ def run(
         },
     )
 
-    work_path = (
-        work_dir.resolve() if work_dir else cfg.work_dir.resolve()
-    )
+    work_path = work_dir.resolve() if work_dir else cfg.work_dir.resolve()
     effective_sensitivity = cfg.diamond_sensitivity
     effective_top_n = cfg.diamond_max_target_seqs
     effective_workers = cfg.num_workers
@@ -188,30 +166,22 @@ def run(
 
     if not q_manifest_path.exists() or not r_manifest_path.exists():
         typer.echo(
-            "Error: manifests not found. "
-            "Run 'distributed-alignment ingest' first.",
+            "Error: manifests not found. Run 'distributed-alignment ingest' first.",
             err=True,
         )
         raise typer.Exit(code=1)
 
-    q_manifest = ChunkManifest(
-        **json.loads(q_manifest_path.read_text())
-    )
-    r_manifest = ChunkManifest(
-        **json.loads(r_manifest_path.read_text())
-    )
+    q_manifest = ChunkManifest(**json.loads(q_manifest_path.read_text()))
+    r_manifest = ChunkManifest(**json.loads(r_manifest_path.read_text()))
 
     run_id = q_manifest.run_id
-    configure_logging(
-        level=cfg.log_level, run_id=run_id, json_output=False
-    )
+    configure_logging(level=cfg.log_level, run_id=run_id, json_output=False)
 
     # Check DIAMOND is available
     diamond = DiamondWrapper(binary=cfg.diamond_binary, threads=1)
     if not diamond.check_available():
         typer.echo(
-            "Error: DIAMOND binary not found. "
-            "Install it or use the Docker container.",
+            "Error: DIAMOND binary not found. Install it or use the Docker container.",
             err=True,
         )
         raise typer.Exit(code=1)
@@ -251,18 +221,19 @@ def run(
     }
 
     if effective_backend == "ray":
-        _run_ray_backend(
-            worker_config, effective_workers
-        )
+        _run_ray_backend(worker_config, effective_workers)
     elif effective_workers <= 1:
         _run_single_worker(
-            stack, diamond, chunks_dir, results_dir, cfg,
-            effective_sensitivity, effective_top_n,
+            stack,
+            diamond,
+            chunks_dir,
+            results_dir,
+            cfg,
+            effective_sensitivity,
+            effective_top_n,
         )
     else:
-        _run_multiprocess_backend(
-            worker_config, effective_workers
-        )
+        _run_multiprocess_backend(worker_config, effective_workers)
 
     # Merge results per query chunk
     merged_dir = work_path / "merged"
@@ -282,17 +253,13 @@ def run(
     stack_status = stack.status()
     typer.echo("")
     typer.echo(f"Pipeline complete (run_id: {run_id})")
-    typer.echo(
-        f"  Completed: "
-        f"{stack_status.get('COMPLETED', 0)}/{total_packages}"
-    )
+    typer.echo(f"  Completed: {stack_status.get('COMPLETED', 0)}/{total_packages}")
     typer.echo(f"  Failed:    {stack_status.get('POISONED', 0)}")
     typer.echo(f"  Results:   {merged_dir}")
 
     if stack_status.get("POISONED", 0) > 0:
         typer.echo(
-            "\nWarning: some packages failed. "
-            "Check logs for details.",
+            "\nWarning: some packages failed. Check logs for details.",
             err=True,
         )
         raise typer.Exit(code=1)
@@ -349,10 +316,7 @@ def _run_multiprocess_backend(
         run_worker_process,
     )
 
-    typer.echo(
-        f"Starting alignment "
-        f"({num_workers} workers, local)..."
-    )
+    typer.echo(f"Starting alignment ({num_workers} workers, local)...")
 
     processes: list[multiprocessing.Process] = []
     for i in range(num_workers):
@@ -368,8 +332,7 @@ def _run_multiprocess_backend(
         p.join()
         if p.exitcode and p.exitcode != 0:
             typer.echo(
-                f"Warning: {p.name} exited with "
-                f"code {p.exitcode}",
+                f"Warning: {p.name} exited with code {p.exitcode}",
                 err=True,
             )
 
@@ -391,14 +354,9 @@ def _run_ray_backend(
         )
         raise typer.Exit(code=1) from None
 
-    typer.echo(
-        f"Starting alignment "
-        f"({num_workers} workers, Ray)..."
-    )
+    typer.echo(f"Starting alignment ({num_workers} workers, Ray)...")
 
-    results = run_ray_workers(
-        worker_config, num_workers=num_workers
-    )
+    results = run_ray_workers(worker_config, num_workers=num_workers)
 
     for r in results:
         wid = r.get("worker_id", "unknown")
@@ -431,9 +389,7 @@ def status(
     )
 
     cfg = load_config(work_dir=work_dir)
-    work_path = (
-        work_dir.resolve() if work_dir else cfg.work_dir.resolve()
-    )
+    work_path = work_dir.resolve() if work_dir else cfg.work_dir.resolve()
     console = Console()
 
     # Read manifests
@@ -447,9 +403,7 @@ def status(
         )
         raise typer.Exit(code=1)
 
-    q_manifest = ChunkManifest(
-        **json.loads(q_manifest_path.read_text())
-    )
+    q_manifest = ChunkManifest(**json.loads(q_manifest_path.read_text()))
     r_manifest = (
         ChunkManifest(**json.loads(r_manifest_path.read_text()))
         if r_manifest_path.exists()
@@ -479,7 +433,10 @@ def status(
         table.add_column("Count", justify="right")
 
         for state_name in [
-            "PENDING", "RUNNING", "COMPLETED", "POISONED",
+            "PENDING",
+            "RUNNING",
+            "COMPLETED",
+            "POISONED",
         ]:
             count = stack_status.get(state_name, 0)
             style = {
@@ -488,9 +445,7 @@ def status(
                 "COMPLETED": "green",
                 "POISONED": "red",
             }.get(state_name, "")
-            table.add_row(
-                state_name, f"[{style}]{count}[/{style}]"
-            )
+            table.add_row(state_name, f"[{style}]{count}[/{style}]")
 
         console.print(table)
     else:
@@ -504,8 +459,7 @@ def status(
     if merged_dir.exists():
         merged_files = list(merged_dir.glob("merged_*.parquet"))
         console.print(
-            f"\n[bold]Merged results:[/bold] "
-            f"{len(merged_files)} files in {merged_dir}"
+            f"\n[bold]Merged results:[/bold] {len(merged_files)} files in {merged_dir}"
         )
     console.print()
 

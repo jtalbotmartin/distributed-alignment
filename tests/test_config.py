@@ -53,9 +53,7 @@ class TestTomlLoading:
 
     def test_loads_from_toml_file(self, tmp_path: Path) -> None:
         toml_content = (
-            'chunk_size = 1000\n'
-            'diamond_sensitivity = "fast"\n'
-            'num_workers = 8\n'
+            'chunk_size = 1000\ndiamond_sensitivity = "fast"\nnum_workers = 8\n'
         )
         toml_path = tmp_path / "distributed_alignment.toml"
         toml_path.write_text(toml_content)
@@ -91,9 +89,7 @@ class TestTomlLoading:
 class TestEnvOverrides:
     """Tests for environment variable overrides."""
 
-    def test_env_overrides_defaults(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_overrides_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("DA_CHUNK_SIZE", "2000")
         monkeypatch.setenv("DA_NUM_WORKERS", "16")
         monkeypatch.setenv("DA_BACKEND", "ray")
@@ -106,7 +102,7 @@ class TestEnvOverrides:
     def test_env_overrides_toml(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        toml_content = 'chunk_size = 1000\nnum_workers = 8\n'
+        toml_content = "chunk_size = 1000\nnum_workers = 8\n"
         toml_path = tmp_path / "distributed_alignment.toml"
         toml_path.write_text(toml_content)
 
@@ -123,7 +119,7 @@ class TestEnvOverrides:
             os.chdir(original_dir)
 
         assert config.chunk_size == 5000  # env wins over TOML
-        assert config.num_workers == 8    # TOML value (no env override)
+        assert config.num_workers == 8  # TOML value (no env override)
 
 
 class TestLoadConfig:
@@ -134,14 +130,12 @@ class TestLoadConfig:
         assert config.chunk_size == 999
 
     def test_none_overrides_ignored(self) -> None:
-        config = load_config(
-            overrides={"chunk_size": None, "num_workers": 2}
-        )
+        config = load_config(overrides={"chunk_size": None, "num_workers": 2})
         assert config.chunk_size == 50_000  # default, not None
         assert config.num_workers == 2
 
     def test_work_dir_toml_discovery(self, tmp_path: Path) -> None:
-        toml_content = 'chunk_size = 7777\n'
+        toml_content = "chunk_size = 7777\n"
         (tmp_path / "distributed_alignment.toml").write_text(toml_content)
 
         config = load_config(work_dir=tmp_path)
@@ -154,7 +148,7 @@ class TestLoadConfig:
         assert config.chunk_size > 0
 
     def test_overrides_beat_toml(self, tmp_path: Path) -> None:
-        toml_content = 'chunk_size = 3000\n'
+        toml_content = "chunk_size = 3000\n"
         (tmp_path / "distributed_alignment.toml").write_text(toml_content)
 
         config = load_config(
@@ -182,9 +176,12 @@ class TestCliConfigIntegration:
             app,
             [
                 "ingest",
-                "--queries", str(sample_fasta),
-                "--reference", str(sample_fasta),
-                "--output-dir", str(output_dir),
+                "--queries",
+                str(sample_fasta),
+                "--reference",
+                str(sample_fasta),
+                "--output-dir",
+                str(output_dir),
             ],
         )
 
@@ -206,10 +203,14 @@ class TestCliConfigIntegration:
             app,
             [
                 "ingest",
-                "--queries", str(sample_fasta),
-                "--reference", str(sample_fasta),
-                "--output-dir", str(output_dir),
-                "--chunk-size", "1",
+                "--queries",
+                str(sample_fasta),
+                "--reference",
+                str(sample_fasta),
+                "--output-dir",
+                str(output_dir),
+                "--chunk-size",
+                "1",
             ],
         )
 
@@ -218,7 +219,9 @@ class TestCliConfigIntegration:
         assert "3 chunks" in result.output
 
     def test_run_uses_config_workers(
-        self, sample_fasta: Path, tmp_path: Path,
+        self,
+        sample_fasta: Path,
+        tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Config num_workers is respected by the run command."""
@@ -233,9 +236,12 @@ class TestCliConfigIntegration:
             app,
             [
                 "ingest",
-                "--queries", str(sample_fasta),
-                "--reference", str(sample_fasta),
-                "--output-dir", str(output_dir),
+                "--queries",
+                str(sample_fasta),
+                "--reference",
+                str(sample_fasta),
+                "--output-dir",
+                str(output_dir),
             ],
         )
 

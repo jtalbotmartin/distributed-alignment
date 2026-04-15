@@ -465,3 +465,49 @@ Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could b
 - `docker-compose.override.yml` (dev overrides: source mounting, debug ports)
 
 ---
+
+### Task 2.9: GitHub Actions CI/CD
+
+**What**: Automated quality checks on every push and PR.
+
+**Key behaviours**:
+- Lint job: ruff check + ruff format --check
+- Type check job: mypy --strict
+- Unit test job: pytest -m "not integration" with coverage report
+- Docker build job: build the image, verify it starts
+- Integration test job (optional, runs on main only): docker-compose with DIAMOND, runs integration tests
+- Upload coverage to Codecov or similar
+
+**Files**:
+- `.github/workflows/ci.yml`
+- Possibly `.github/workflows/integration.yml` (separate workflow for heavier tests)
+
+---
+
+## Implementation Order
+
+Tasks are ordered to build on each other:
+
+1. **2.0** — Config wiring (foundation for all Phase 2 config)
+2. **2.1** — Heartbeats (needed before reaper)
+3. **2.2** — Reaper (needed before multi-worker makes sense)
+4. **2.3** — Multi-worker via multiprocessing (validates concurrency)
+5. **2.4** — Chaos tests (validates fault tolerance)
+6. **2.5** — Ray integration (upgrades the worker backend)
+7. **2.6** — Prometheus metrics (observability)
+8. **2.7** — Grafana dashboard (visualisation of metrics)
+9. **2.8** — Docker packaging (deployment)
+10. **2.9** — CI/CD (automation)
+
+
+## Acceptance Criteria for Phase 2 Complete
+
+- Multi-worker execution: `--workers 4` processes packages in parallel correctly
+- Fault tolerance demonstrated: killing a worker doesn't lose data or stall the pipeline
+- Ray backend works: `--backend ray` produces identical results to `--backend local`
+- Prometheus metrics exposed and accurate
+- Grafana dashboard loads and shows meaningful data during a pipeline run
+- docker-compose spins up the full stack (workers + Prometheus + Grafana)
+- GitHub Actions CI passes on push
+- All existing Phase 1 tests still pass
+

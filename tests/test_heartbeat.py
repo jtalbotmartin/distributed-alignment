@@ -84,9 +84,7 @@ class TestHeartbeatMethod:
         new_hb = datetime.fromisoformat(data["heartbeat_at"])
         assert new_hb > original_hb  # type: ignore[operator]
 
-    def test_heartbeat_on_moved_package_does_not_crash(
-        self, tmp_path: Path
-    ) -> None:
+    def test_heartbeat_on_moved_package_does_not_crash(self, tmp_path: Path) -> None:
         """If the package was completed/failed, heartbeat is a no-op."""
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests()
@@ -125,9 +123,7 @@ class TestHeartbeatSender:
         claimed = datetime.fromisoformat(data["claimed_at"])
         assert hb > claimed
 
-    def test_stops_cleanly_on_context_exit(
-        self, tmp_path: Path
-    ) -> None:
+    def test_stops_cleanly_on_context_exit(self, tmp_path: Path) -> None:
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests()
         stack.generate_work_packages(q, r)
@@ -136,18 +132,14 @@ class TestHeartbeatSender:
         assert pkg is not None
 
         sender: HeartbeatSender
-        with HeartbeatSender(
-            stack, pkg.package_id, interval=0.05
-        ) as sender:
+        with HeartbeatSender(stack, pkg.package_id, interval=0.05) as sender:
             time.sleep(0.1)
             assert sender.is_alive
 
         # After exiting context, thread should be stopped
         assert not sender.is_alive
 
-    def test_handles_package_completion_gracefully(
-        self, tmp_path: Path
-    ) -> None:
+    def test_handles_package_completion_gracefully(self, tmp_path: Path) -> None:
         """If the package is moved while heartbeat is running, no crash."""
         stack = FileSystemWorkStack(tmp_path)
         q, r = _make_manifests()
@@ -166,9 +158,7 @@ class TestHeartbeatSender:
         # Should complete without error
         assert stack.status()["COMPLETED"] == 1
 
-    def test_handles_heartbeat_exception(
-        self, tmp_path: Path
-    ) -> None:
+    def test_handles_heartbeat_exception(self, tmp_path: Path) -> None:
         """If heartbeat() raises, the thread stops but doesn't crash."""
         mock_stack = MagicMock(spec=FileSystemWorkStack)
         mock_stack.heartbeat.side_effect = RuntimeError("test error")
@@ -187,9 +177,7 @@ class TestHeartbeatSender:
 class TestWorkerRunnerWithHeartbeat:
     """Tests that the worker runner uses heartbeats during processing."""
 
-    def test_heartbeat_fires_during_processing(
-        self, tmp_path: Path
-    ) -> None:
+    def test_heartbeat_fires_during_processing(self, tmp_path: Path) -> None:
         """With a slow mock DIAMOND, heartbeat should update during work."""
         from distributed_alignment.ingest.chunker import chunk_sequences
         from distributed_alignment.models import ProteinSequence
@@ -242,8 +230,7 @@ class TestWorkerRunnerWithHeartbeat:
         ) -> DiamondResult:
             time.sleep(0.3)
             output_path.write_text(
-                "seq_0001\tref_0001\t85.0\t100\t15\t0"
-                "\t1\t100\t1\t100\t1e-30\t200.0\n"
+                "seq_0001\tref_0001\t85.0\t100\t15\t0\t1\t100\t1\t100\t1e-30\t200.0\n"
             )
             return DiamondResult(
                 exit_code=0,

@@ -45,16 +45,12 @@ class TestAssignChunk:
         """Verify the function produces the expected SHA-256-based result."""
         seq_id = "seq_0001"
         num_chunks = 10
-        expected = (
-            int(hashlib.sha256(seq_id.encode()).hexdigest(), 16) % num_chunks
-        )
+        expected = int(hashlib.sha256(seq_id.encode()).hexdigest(), 16) % num_chunks
         assert assign_chunk(seq_id, num_chunks) == expected
 
     def test_distributes_across_chunks(self) -> None:
         """100 sequence IDs across 5 chunks should use all 5."""
-        assignments = {
-            assign_chunk(f"seq_{i:04d}", 5) for i in range(100)
-        }
+        assignments = {assign_chunk(f"seq_{i:04d}", 5) for i in range(100)}
         assert assignments == {0, 1, 2, 3, 4}
 
 
@@ -62,22 +58,16 @@ class TestSequenceContentHash:
     """Tests for the sequence content hash function."""
 
     def test_deterministic(self) -> None:
-        assert sequence_content_hash("MKWVTFIS") == sequence_content_hash(
-            "MKWVTFIS"
-        )
+        assert sequence_content_hash("MKWVTFIS") == sequence_content_hash("MKWVTFIS")
 
     def test_different_sequences_different_hashes(self) -> None:
-        assert sequence_content_hash("MKWVTFIS") != sequence_content_hash(
-            "ACDEFGHI"
-        )
+        assert sequence_content_hash("MKWVTFIS") != sequence_content_hash("ACDEFGHI")
 
 
 class TestChunkDeterminism:
     """Tests that chunking is reproducible."""
 
-    def test_identical_input_produces_identical_parquet(
-        self, tmp_path: Path
-    ) -> None:
+    def test_identical_input_produces_identical_parquet(self, tmp_path: Path) -> None:
         """Chunk the same sequences twice → identical Parquet files."""
         sequences = _make_sequences(50)
 
@@ -107,9 +97,7 @@ class TestChunkDeterminism:
             assert parquet_b.exists(), f"Missing {parquet_b.name} in run_b"
             assert file_checksum(parquet_a) == file_checksum(parquet_b)
 
-    def test_shuffled_input_same_chunk_assignments(
-        self, tmp_path: Path
-    ) -> None:
+    def test_shuffled_input_same_chunk_assignments(self, tmp_path: Path) -> None:
         """Shuffling input order → same sequences end up in same chunks."""
         sequences = _make_sequences(50)
         shuffled = list(sequences)
@@ -137,9 +125,7 @@ class TestChunkDeterminism:
 
         # Same parquet files should exist
         ordered_files = sorted(f.name for f in dir_ordered.glob("chunk_*.parquet"))
-        shuffled_files = sorted(
-            f.name for f in dir_shuffled.glob("chunk_*.parquet")
-        )
+        shuffled_files = sorted(f.name for f in dir_shuffled.glob("chunk_*.parquet"))
         assert ordered_files == shuffled_files
 
         # Same content in each
@@ -176,9 +162,7 @@ class TestRoundTrip:
             for row_idx in range(table.num_rows):
                 seq_id = table.column("sequence_id")[row_idx].as_py()
                 seq = table.column("sequence")[row_idx].as_py()
-                assert seq_id not in recovered_ids, (
-                    f"Duplicate: {seq_id}"
-                )
+                assert seq_id not in recovered_ids, f"Duplicate: {seq_id}"
                 recovered_ids.add(seq_id)
                 recovered_seqs[seq_id] = seq
 
@@ -210,9 +194,7 @@ class TestChunkDistribution:
         # Each chunk should have between 5 and 40 (very generous bounds
         # for a hash-based distribution of 100 items into 5 buckets)
         for count in counts:
-            assert 5 <= count <= 40, (
-                f"Chunk size {count} is outside expected range"
-            )
+            assert 5 <= count <= 40, f"Chunk size {count} is outside expected range"
 
     def test_fewer_sequences_than_chunks(self, tmp_path: Path) -> None:
         """3 sequences into 10 chunks → only 1-3 Parquet files produced."""

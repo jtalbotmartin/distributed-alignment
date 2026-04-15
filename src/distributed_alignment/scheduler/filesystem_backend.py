@@ -56,18 +56,14 @@ class FileSystemWorkStack:
         """Return the directory path for a given state."""
         return self._base_dir / STATE_DIRS[state]
 
-    def _package_path(
-        self, package_id: str, state: WorkPackageState
-    ) -> Path:
+    def _package_path(self, package_id: str, state: WorkPackageState) -> Path:
         """Return the file path for a package in a given state directory."""
         return self._dir_for(state) / f"{package_id}.json"
 
     def _write_package(self, package: WorkPackage) -> None:
         """Write a work package to its state directory."""
         path = self._package_path(package.package_id, package.state)
-        path.write_text(
-            json.dumps(package.model_dump(mode="json"), indent=2)
-        )
+        path.write_text(json.dumps(package.model_dump(mode="json"), indent=2))
 
     def _log_transition(
         self,
@@ -169,15 +165,11 @@ class FileSystemWorkStack:
 
             # Rename succeeded — we own this package
             try:
-                package = WorkPackage(
-                    **json.loads(dst_path.read_text())
-                )
+                package = WorkPackage(**json.loads(dst_path.read_text()))
             except (json.JSONDecodeError, Exception) as exc:
                 # Corrupt JSON — move to poisoned/ so it doesn't
                 # block the queue
-                poisoned_path = self._dir_for(
-                    WorkPackageState.POISONED
-                ) / dst_path.name
+                poisoned_path = self._dir_for(WorkPackageState.POISONED) / dst_path.name
                 try:
                     os.rename(dst_path, poisoned_path)
                 except OSError:
@@ -206,9 +198,7 @@ class FileSystemWorkStack:
             package.heartbeat_at = now
 
             # Write updated JSON back to the running directory
-            dst_path.write_text(
-                json.dumps(package.model_dump(mode="json"), indent=2)
-            )
+            dst_path.write_text(json.dumps(package.model_dump(mode="json"), indent=2))
 
             return package
 
@@ -238,9 +228,7 @@ class FileSystemWorkStack:
         package.state = WorkPackageState.COMPLETED
         package.completed_at = datetime.now(tz=UTC)
 
-        dst.write_text(
-            json.dumps(package.model_dump(mode="json"), indent=2)
-        )
+        dst.write_text(json.dumps(package.model_dump(mode="json"), indent=2))
         src.unlink()
 
     def fail(self, package_id: str, error: str) -> None:
@@ -279,9 +267,7 @@ class FileSystemWorkStack:
 
         package.state = target_state
         dst = self._package_path(package_id, target_state)
-        dst.write_text(
-            json.dumps(package.model_dump(mode="json"), indent=2)
-        )
+        dst.write_text(json.dumps(package.model_dump(mode="json"), indent=2))
         src.unlink()
 
     def heartbeat(self, package_id: str) -> None:
@@ -298,9 +284,7 @@ class FileSystemWorkStack:
         try:
             package = WorkPackage(**json.loads(path.read_text()))
             package.heartbeat_at = datetime.now(tz=UTC)
-            path.write_text(
-                json.dumps(package.model_dump(mode="json"), indent=2)
-            )
+            path.write_text(json.dumps(package.model_dump(mode="json"), indent=2))
         except FileNotFoundError:
             logger.debug(
                 "heartbeat_skipped_package_moved",
@@ -338,9 +322,7 @@ class FileSystemWorkStack:
                 continue
 
             try:
-                package = WorkPackage(
-                    **json.loads(path.read_text())
-                )
+                package = WorkPackage(**json.loads(path.read_text()))
             except FileNotFoundError:
                 continue
 
@@ -355,10 +337,7 @@ class FileSystemWorkStack:
                     f"timeout {timeout_seconds}s"
                 )
             else:
-                reason = (
-                    f"heartbeat never started, "
-                    f"timeout {timeout_seconds}s"
-                )
+                reason = f"heartbeat never started, timeout {timeout_seconds}s"
 
             # Stale — reap it
             package.attempt += 1
@@ -382,16 +361,10 @@ class FileSystemWorkStack:
             )
 
             package.state = target_state
-            dst = self._package_path(
-                package.package_id, target_state
-            )
+            dst = self._package_path(package.package_id, target_state)
 
             try:
-                dst.write_text(
-                    json.dumps(
-                        package.model_dump(mode="json"), indent=2
-                    )
-                )
+                dst.write_text(json.dumps(package.model_dump(mode="json"), indent=2))
                 path.unlink()
             except FileNotFoundError:
                 # Another reaper or worker moved it — skip
@@ -414,9 +387,7 @@ class FileSystemWorkStack:
 
     def status(self) -> dict[str, int]:
         """Return counts of packages in each state."""
-        return {
-            state.value: self._count_in(state) for state in STATE_DIRS
-        }
+        return {state.value: self._count_in(state) for state in STATE_DIRS}
 
     def _count_in(self, state: WorkPackageState) -> int:
         """Count JSON files in a state directory."""

@@ -1,12 +1,14 @@
 # `distributed-alignment`
 
+![CI](https://github.com/jtalbotmartin/distributed-alignment/actions/workflows/ci.yml/badge.svg)
+
 A distributed, fault-tolerant protein sequence alignment system built around DIAMOND BLAST.
 
 Decomposes large-scale alignment problems into independent work packages, distributes them across elastic workers via Ray, and produces ML-ready feature tables — with full observability and infrastructure as code.
 
 ## Status
 
-Phase 1 (Core Pipeline MVP) complete. See [`docs/task-tracker.md`](docs/task-tracker.md) for progress.
+Phase 2 (Fault Tolerance & Distribution) complete. See [`docs/task-tracker.md`](docs/task-tracker.md) for progress.
 
 ## Documentation
 

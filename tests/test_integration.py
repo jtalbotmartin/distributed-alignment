@@ -41,9 +41,7 @@ class TestFullPipeline:
         if not diamond.check_available():
             pytest.skip("DIAMOND binary not available")
 
-        configure_logging(
-            level="INFO", run_id="integration_test", json_output=True
-        )
+        configure_logging(level="INFO", run_id="integration_test", json_output=True)
 
         queries_fasta, ref_fasta = integration_test_data
         work_dir = tmp_path / "work"
@@ -143,9 +141,7 @@ class TestFullPipeline:
                 f"SELECT count(*) FROM read_parquet('{merged_pattern}')"
             ).fetchone()
             assert total_hits is not None
-            assert total_hits[0] > 0, (
-                "Expected at least some alignment hits"
-            )
+            assert total_hits[0] > 0, "Expected at least some alignment hits"
 
             # Check biological meaningfulness with Swiss-Prot data
             best_evalue = con.execute(

@@ -22,10 +22,7 @@ def _try_import_ray() -> Any:  # noqa: ANN401
 
         return ray
     except ImportError:
-        msg = (
-            "Ray is not installed. "
-            "Install with: uv add 'distributed-alignment[ray]'"
-        )
+        msg = "Ray is not installed. Install with: uv add 'distributed-alignment[ray]'"
         raise ImportError(msg) from None
 
 
@@ -80,9 +77,7 @@ def create_alignment_actor(
             )
 
             try:
-                stack = FileSystemWorkStack(
-                    Path(str(cfg["work_stack_dir"]))
-                )
+                stack = FileSystemWorkStack(Path(str(cfg["work_stack_dir"])))
                 diamond = DiamondWrapper(
                     binary=str(cfg.get("diamond_binary", "diamond")),
                     threads=1,
@@ -93,28 +88,14 @@ def create_alignment_actor(
                     diamond,
                     Path(str(cfg["chunks_dir"])),
                     Path(str(cfg["results_dir"])),
-                    sensitivity=str(
-                        cfg.get("sensitivity", "very-sensitive")
-                    ),
-                    max_target_seqs=int(
-                        str(cfg.get("max_target_seqs", 50))
-                    ),
+                    sensitivity=str(cfg.get("sensitivity", "very-sensitive")),
+                    max_target_seqs=int(str(cfg.get("max_target_seqs", 50))),
                     timeout=int(str(cfg.get("timeout", 3600))),
-                    heartbeat_interval=float(
-                        str(cfg.get("heartbeat_interval", 30.0))
-                    ),
-                    heartbeat_timeout=int(
-                        str(cfg.get("heartbeat_timeout", 120))
-                    ),
-                    reaper_interval=float(
-                        str(cfg.get("reaper_interval", 60.0))
-                    ),
-                    max_idle_time=float(
-                        str(cfg.get("max_idle_time", 30.0))
-                    ),
-                    metrics_port=int(
-                        str(cfg.get("metrics_port", 9090))
-                    ),
+                    heartbeat_interval=float(str(cfg.get("heartbeat_interval", 30.0))),
+                    heartbeat_timeout=int(str(cfg.get("heartbeat_timeout", 120))),
+                    reaper_interval=float(str(cfg.get("reaper_interval", 60.0))),
+                    max_idle_time=float(str(cfg.get("max_idle_time", 30.0))),
+                    metrics_port=int(str(cfg.get("metrics_port", 9090))),
                 )
 
                 completed = runner.run()
@@ -182,9 +163,7 @@ def run_ray_workers(
         )
 
         actors = [
-            create_alignment_actor(
-                worker_config, num_cpus=num_cpus_per_worker
-            )
+            create_alignment_actor(worker_config, num_cpus=num_cpus_per_worker)
             for _ in range(num_workers)
         ]
 

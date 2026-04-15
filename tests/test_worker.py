@@ -52,9 +52,7 @@ def _make_test_sequences(n: int) -> list[ProteinSequence]:
     ]
 
 
-def _make_manifests(
-    num_q: int, num_r: int
-) -> tuple[ChunkManifest, ChunkManifest]:
+def _make_manifests(num_q: int, num_r: int) -> tuple[ChunkManifest, ChunkManifest]:
     """Create minimal manifests for test work package generation."""
     now = datetime.now(tz=UTC)
     q = ChunkManifest(
@@ -228,14 +226,10 @@ class TestWorkerRunnerUnit:
         return mock  # type: ignore[return-value]
 
     def test_processes_all_packages(self, tmp_path: Path) -> None:
-        stack, chunks_dir, results_dir = self._setup_chunks_and_stack(
-            tmp_path
-        )
+        stack, chunks_dir, results_dir = self._setup_chunks_and_stack(tmp_path)
         diamond = self._make_mock_diamond(tmp_path)
 
-        runner = WorkerRunner(
-            stack, diamond, chunks_dir, results_dir
-        )
+        runner = WorkerRunner(stack, diamond, chunks_dir, results_dir)
         completed = runner.run()
 
         assert completed == 1
@@ -243,14 +237,10 @@ class TestWorkerRunnerUnit:
         assert stack.status()["COMPLETED"] == 1
 
     def test_writes_result_parquet(self, tmp_path: Path) -> None:
-        stack, chunks_dir, results_dir = self._setup_chunks_and_stack(
-            tmp_path
-        )
+        stack, chunks_dir, results_dir = self._setup_chunks_and_stack(tmp_path)
         diamond = self._make_mock_diamond(tmp_path)
 
-        runner = WorkerRunner(
-            stack, diamond, chunks_dir, results_dir
-        )
+        runner = WorkerRunner(stack, diamond, chunks_dir, results_dir)
         runner.run()
 
         result_files = list(results_dir.glob("*.parquet"))
@@ -259,18 +249,12 @@ class TestWorkerRunnerUnit:
         table = pq.read_table(result_files[0])
         assert table.schema.equals(DIAMOND_SCHEMA)
 
-    def test_diamond_failure_exhausts_retries(
-        self, tmp_path: Path
-    ) -> None:
+    def test_diamond_failure_exhausts_retries(self, tmp_path: Path) -> None:
         """Persistent failure → worker retries until POISONED."""
-        stack, chunks_dir, results_dir = self._setup_chunks_and_stack(
-            tmp_path
-        )
+        stack, chunks_dir, results_dir = self._setup_chunks_and_stack(tmp_path)
         diamond = self._make_mock_diamond(tmp_path, fail=True)
 
-        runner = WorkerRunner(
-            stack, diamond, chunks_dir, results_dir
-        )
+        runner = WorkerRunner(stack, diamond, chunks_dir, results_dir)
         completed = runner.run()
 
         assert completed == 0
@@ -279,13 +263,9 @@ class TestWorkerRunnerUnit:
         assert stack.status()["POISONED"] == 1
         assert stack.pending_count() == 0
 
-    def test_makedb_failure_exhausts_retries(
-        self, tmp_path: Path
-    ) -> None:
+    def test_makedb_failure_exhausts_retries(self, tmp_path: Path) -> None:
         """Persistent makedb failure → retries exhausted → POISONED."""
-        stack, chunks_dir, results_dir = self._setup_chunks_and_stack(
-            tmp_path
-        )
+        stack, chunks_dir, results_dir = self._setup_chunks_and_stack(tmp_path)
         diamond = self._make_mock_diamond(tmp_path)
         diamond.make_db.return_value = DiamondResult(  # type: ignore[attr-defined]
             exit_code=1,
@@ -294,9 +274,7 @@ class TestWorkerRunnerUnit:
             error_message="makedb failed",
         )
 
-        runner = WorkerRunner(
-            stack, diamond, chunks_dir, results_dir
-        )
+        runner = WorkerRunner(stack, diamond, chunks_dir, results_dir)
         completed = runner.run()
 
         assert completed == 0
@@ -314,9 +292,7 @@ class TestWorkerRunnerUnit:
         results_dir = tmp_path / "results"
         diamond = self._make_mock_diamond(tmp_path)
 
-        runner = WorkerRunner(
-            stack, diamond, empty_chunks, results_dir
-        )
+        runner = WorkerRunner(stack, diamond, empty_chunks, results_dir)
         completed = runner.run()
 
         assert completed == 0
@@ -325,12 +301,8 @@ class TestWorkerRunnerUnit:
         stack = FileSystemWorkStack(tmp_path)
         diamond = MagicMock(spec=DiamondWrapper)
 
-        runner1 = WorkerRunner(
-            stack, diamond, tmp_path, tmp_path / "results1"
-        )
-        runner2 = WorkerRunner(
-            stack, diamond, tmp_path, tmp_path / "results2"
-        )
+        runner1 = WorkerRunner(stack, diamond, tmp_path, tmp_path / "results1")
+        runner2 = WorkerRunner(stack, diamond, tmp_path, tmp_path / "results2")
 
         assert runner1.worker_id != runner2.worker_id
         assert runner1.worker_id.startswith("worker-")
@@ -374,9 +346,7 @@ class TestWorkerRunnerUnit:
         stack.generate_work_packages(q_manifest, r_manifest)
 
         diamond = self._make_mock_diamond(tmp_path)
-        runner = WorkerRunner(
-            stack, diamond, chunks_dir, results_dir
-        )
+        runner = WorkerRunner(stack, diamond, chunks_dir, results_dir)
         completed = runner.run()
 
         assert completed == 1

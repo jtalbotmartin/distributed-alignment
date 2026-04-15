@@ -188,9 +188,7 @@ class ReaperThread:
         """Reaper loop — runs in background thread."""
         while not self._stop_event.wait(timeout=self._interval):
             try:
-                reaped = self._work_stack.reap_stale(
-                    self._timeout_seconds
-                )
+                reaped = self._work_stack.reap_stale(self._timeout_seconds)
                 if not reaped:
                     logger.debug("reaper_scan_clean")
             except Exception:
@@ -323,9 +321,7 @@ class WorkerRunner:
                             logger.info(
                                 "worker_idle_exit",
                                 worker_id=self._worker_id,
-                                idle_seconds=round(
-                                    idle_duration, 1
-                                ),
+                                idle_seconds=round(idle_duration, 1),
                             )
                             break
 
@@ -391,9 +387,7 @@ class WorkerRunner:
             return False
 
         duration = time.monotonic() - start
-        self._work_stack.complete(
-            package.package_id, str(result_path)
-        )
+        self._work_stack.complete(package.package_id, str(result_path))
         record_package_completed(
             duration_seconds=duration,
             num_sequences=0,  # Not tracked at this level
@@ -407,9 +401,7 @@ class WorkerRunner:
         )
         return True
 
-    def _run_alignment(
-        self, package: WorkPackage
-    ) -> tuple[Path | None, int]:
+    def _run_alignment(self, package: WorkPackage) -> tuple[Path | None, int]:
         """Execute the alignment for a work package.
 
         Converts Parquet chunks to FASTA, builds the reference DB if
@@ -429,16 +421,11 @@ class WorkerRunner:
         )
 
         # Locate chunk Parquet files
-        query_parquet = self._find_chunk_parquet(
-            package.query_chunk_id
-        )
+        query_parquet = self._find_chunk_parquet(package.query_chunk_id)
         ref_parquet = self._find_chunk_parquet(package.ref_chunk_id)
 
         if query_parquet is None or ref_parquet is None:
-            error = (
-                f"Missing chunk file: "
-                f"query={query_parquet}, ref={ref_parquet}"
-            )
+            error = f"Missing chunk file: query={query_parquet}, ref={ref_parquet}"
             self._work_stack.fail(package.package_id, error)
             record_package_failed("missing_chunk")
             return None, 0
@@ -457,10 +444,7 @@ class WorkerRunner:
                 package.ref_chunk_id, ref_parquet, work_dir
             )
             if ref_db_path is None:
-                error = (
-                    "Failed to build reference DB "
-                    f"for {package.ref_chunk_id}"
-                )
+                error = f"Failed to build reference DB for {package.ref_chunk_id}"
                 self._work_stack.fail(package.package_id, error)
                 record_package_failed("makedb_failed")
                 return None, 0
@@ -484,11 +468,7 @@ class WorkerRunner:
                     or f"blastp failed: exit {blast_result.exit_code}"
                 )
                 self._work_stack.fail(package.package_id, error)
-                error_type = (
-                    "oom"
-                    if blast_result.exit_code == 137
-                    else "diamond_error"
-                )
+                error_type = "oom" if blast_result.exit_code == 137 else "diamond_error"
                 record_package_failed(error_type)
                 return None, 0
 
@@ -573,9 +553,7 @@ class WorkerRunner:
         Returns:
             Path to the Parquet file, or None if not found.
         """
-        candidates = list(
-            self._chunks_dir.glob(f"**/chunk_{chunk_id}.parquet")
-        )
+        candidates = list(self._chunks_dir.glob(f"**/chunk_{chunk_id}.parquet"))
         if candidates:
             return candidates[0]
         return None

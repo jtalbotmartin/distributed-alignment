@@ -673,3 +673,30 @@ All 500 packages completed, 0 poisoned, 248 successful DIAMOND alignments, p50 d
 **Known limitation**: The "Pipeline Progress" gauge shows "No data" — the PromQL division query requires all four state labels to exist simultaneously in the same scrape. Minor dashboard polish for a future fix.
 
 **Status**: Complete
+
+---
+
+### Task 2.9: GitHub Actions CI/CD — 2026-04-15
+
+**What was done**:
+- `.github/workflows/ci.yml` — 4 CI jobs:
+  1. **quality** (every push/PR): `ruff check`, `ruff format --check`, `mypy --strict`. ~1 min.
+  2. **unit-tests** (every push/PR): `pytest -m "not integration"` with coverage report uploaded as artifact. ~10 min (includes timing-dependent multiworker tests).
+  3. **integration-tests** (main + PRs to main, after quality + unit-tests pass): installs DIAMOND v2.1.10 Linux binary, runs `pytest -m "integration"`. ~15 min.
+  4. **docker-build** (every push/PR, parallel): builds production Dockerfile, verifies `--help` works.
+- `.github/dependabot.yml` — weekly updates for GitHub Actions versions.
+- Applied `ruff format` across entire codebase (24 files reformatted) to ensure `ruff format --check` passes in CI.
+- Added CI badge to README.md.
+
+**Decisions made**:
+- **quality and unit-tests run in parallel** — both fast, independent. integration-tests depends on both (`needs: [quality, unit-tests]`) to avoid wasting CI minutes on heavy DIAMOND tests if basic checks fail.
+- **docker-build runs in parallel** with everything — it's independent and catches Dockerfile issues early.
+- **DIAMOND installed via direct binary download** in integration-tests (not conda) — faster and simpler for CI. The `diamond-linux64.tar.gz` from GitHub releases works on ubuntu-latest's x86_64.
+- **uv cached** via `astral-sh/setup-uv@v4` with `enable-cache: true` for faster dependency installs across runs.
+- **PYTHONPATH=src** set at job-level `env` so all steps inherit it (matches the `package = false` project setup).
+- **Timeout-minutes** on each job: quality 5, unit-tests 15, integration-tests 15, docker-build 10. Prevents hung jobs from burning CI minutes.
+- Integration-tests run on `github.ref == 'refs/heads/main' || github.event_name == 'pull_request'` — runs on PRs to main but not on every branch push.
+
+**Also done**: Applied `ruff format` to normalise code style across all 42 Python files. No functional changes — only formatting (line wrapping, quote style, trailing commas).
+
+**Status**: Complete

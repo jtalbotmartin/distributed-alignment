@@ -71,9 +71,7 @@ class TestRunId:
     """Tests for run_id correlation."""
 
     def test_run_id_in_output(self) -> None:
-        buf, log = _capture_log_output(
-            run_id="test-run-123", json_output=True
-        )
+        buf, log = _capture_log_output(run_id="test-run-123", json_output=True)
 
         log.info("test_event")
 
@@ -89,9 +87,7 @@ class TestRunId:
         assert "run_id" not in parsed
 
     def test_reconfigure_updates_run_id(self) -> None:
-        buf, log = _capture_log_output(
-            run_id="run-first", json_output=True
-        )
+        buf, log = _capture_log_output(run_id="run-first", json_output=True)
         log.info("first_event")
         first_line = buf.getvalue().strip()
 
@@ -153,9 +149,7 @@ class TestLogLevels:
         log.debug("should_not_appear")
         log.info("should_appear")
 
-        lines = [
-            line for line in buf.getvalue().strip().split("\n") if line
-        ]
+        lines = [line for line in buf.getvalue().strip().split("\n") if line]
         assert len(lines) == 1
         assert json.loads(lines[0])["event"] == "should_appear"
 
@@ -164,9 +158,7 @@ class TestLogLevels:
 
         log.debug("should_appear")
 
-        lines = [
-            line for line in buf.getvalue().strip().split("\n") if line
-        ]
+        lines = [line for line in buf.getvalue().strip().split("\n") if line]
         assert len(lines) == 1
         assert json.loads(lines[0])["event"] == "should_appear"
 
@@ -175,9 +167,7 @@ class TestLogLevels:
 
         log.warning("warn_event")
 
-        lines = [
-            line for line in buf.getvalue().strip().split("\n") if line
-        ]
+        lines = [line for line in buf.getvalue().strip().split("\n") if line]
         assert len(lines) == 1
         assert json.loads(lines[0])["level"] == "warning"
 

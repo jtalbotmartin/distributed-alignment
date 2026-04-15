@@ -62,7 +62,8 @@ def _make_sequences(n: int) -> list[ProteinSequence]:
 
 
 def _make_manifests(
-    num_q: int = 2, num_r: int = 1,
+    num_q: int = 2,
+    num_r: int = 1,
 ) -> tuple[ChunkManifest, ChunkManifest]:
     now = datetime.now(tz=UTC)
     q = ChunkManifest(
@@ -105,7 +106,9 @@ def _make_manifests(
 
 
 def _setup_work(
-    tmp_path: Path, num_q: int = 2, num_r: int = 1,
+    tmp_path: Path,
+    num_q: int = 2,
+    num_r: int = 1,
 ) -> tuple[FileSystemWorkStack, Path, Path]:
     chunks_dir = tmp_path / "chunks"
     seqs = _make_sequences(10)
@@ -152,14 +155,17 @@ class TestRayBasicFunctionality:
     """
 
     def test_ray_workers_complete_all_packages(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """2 Ray actors processing 4 packages → all 4 completed."""
         if not _check_diamond():
             pytest.skip("DIAMOND not available")
 
         stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=4, num_r=1,
+            tmp_path,
+            num_q=4,
+            num_r=1,
         )
 
         config = {
@@ -180,27 +186,27 @@ class TestRayBasicFunctionality:
 
         results = run_ray_workers(config, num_workers=2)
 
-        total_completed = sum(
-            r.get("packages_completed", 0) for r in results
-        )
+        total_completed = sum(r.get("packages_completed", 0) for r in results)
         errors = [r for r in results if r.get("error")]
 
         assert total_completed == 4, (
-            f"Expected 4 completed, got {total_completed}. "
-            f"Errors: {errors}"
+            f"Expected 4 completed, got {total_completed}. Errors: {errors}"
         )
         assert stack.status()["COMPLETED"] == 4
         assert stack.status()["POISONED"] == 0
 
     def test_ray_concurrent_execution(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """Verify 2 actors are faster than 1 (parallel execution)."""
         if not _check_diamond():
             pytest.skip("DIAMOND not available")
 
         stack, chunks_dir, results_dir = _setup_work(
-            tmp_path, num_q=4, num_r=1,
+            tmp_path,
+            num_q=4,
+            num_r=1,
         )
 
         config = {
@@ -238,7 +244,8 @@ class TestRayErrorHandling:
     """Test that Ray actors handle errors gracefully."""
 
     def test_actor_with_bad_config_returns_error(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """Actor with nonexistent paths returns error, doesn't crash."""
         config = {
@@ -267,7 +274,8 @@ class TestRayImportHandling:
         with (
             patch.dict("sys.modules", {"ray": None}),
             pytest.raises(
-                ImportError, match="Ray is not installed",
+                ImportError,
+                match="Ray is not installed",
             ),
         ):
             _try_import_ray()
@@ -289,7 +297,8 @@ class TestBackendFlag:
         with (
             patch.dict("sys.modules", {"ray": None}),
             pytest.raises(
-                ImportError, match="Ray is not installed",
+                ImportError,
+                match="Ray is not installed",
             ),
         ):
             _try_import_ray()

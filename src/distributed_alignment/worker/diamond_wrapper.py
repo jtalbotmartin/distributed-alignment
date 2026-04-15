@@ -37,9 +37,7 @@ DIAMOND_COLUMNS: list[tuple[str, pa.DataType]] = [
     ("bitscore", pa.float64()),
 ]
 
-DIAMOND_SCHEMA = pa.schema(
-    [pa.field(name, dtype) for name, dtype in DIAMOND_COLUMNS]
-)
+DIAMOND_SCHEMA = pa.schema([pa.field(name, dtype) for name, dtype in DIAMOND_COLUMNS])
 
 
 @dataclass
@@ -193,9 +191,7 @@ class DiamondWrapper:
             result.output_path = str(output_path)
         return result
 
-    def _run_command(
-        self, cmd: list[str], *, timeout: int
-    ) -> DiamondResult:
+    def _run_command(self, cmd: list[str], *, timeout: int) -> DiamondResult:
         """Execute a DIAMOND command as a subprocess.
 
         Args:
@@ -263,8 +259,7 @@ class DiamondWrapper:
             )
         elif proc.returncode == 137:
             result.error_message = (
-                "DIAMOND killed by OOM (exit code 137). "
-                "Try increasing worker memory."
+                "DIAMOND killed by OOM (exit code 137). Try increasing worker memory."
             )
             logger.error(
                 "diamond_oom",
