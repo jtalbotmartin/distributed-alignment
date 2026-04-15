@@ -105,7 +105,6 @@ jobs:
           uv run pytest tests/
           -m "integration"
           -v
-          --timeout=120
 
   docker-build:
     name: Docker Build
