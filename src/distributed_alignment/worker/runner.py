@@ -234,6 +234,7 @@ class WorkerRunner:
         heartbeat_timeout: int = 120,
         reaper_interval: float = 60.0,
         max_idle_time: float = 30.0,
+        metrics_port: int = 9090,
     ) -> None:
         self._work_stack = work_stack
         self._diamond = diamond
@@ -246,6 +247,7 @@ class WorkerRunner:
         self._heartbeat_timeout = heartbeat_timeout
         self._reaper_interval = reaper_interval
         self._max_idle_time = max_idle_time
+        self._metrics_port = metrics_port
         self._worker_id = f"worker-{uuid.uuid4().hex[:8]}"
         self._shutdown = threading.Event()
 
@@ -288,6 +290,7 @@ class WorkerRunner:
         from distributed_alignment.observability.metrics import (
             dec_worker,
             inc_worker,
+            start_metrics_server,
             update_package_states,
         )
 
@@ -295,6 +298,7 @@ class WorkerRunner:
             "worker_started",
             worker_id=self._worker_id,
         )
+        start_metrics_server(self._metrics_port)
         inc_worker()
 
         try:
@@ -590,6 +594,7 @@ def run_worker_process(
     heartbeat_timeout: int = 120,
     reaper_interval: float = 60.0,
     max_idle_time: float = 30.0,
+    metrics_port: int = 9090,
     log_level: str = "INFO",
     run_id: str | None = None,
 ) -> int:
@@ -643,6 +648,7 @@ def run_worker_process(
         heartbeat_timeout=heartbeat_timeout,
         reaper_interval=reaper_interval,
         max_idle_time=max_idle_time,
+        metrics_port=metrics_port,
     )
 
     return runner.run()

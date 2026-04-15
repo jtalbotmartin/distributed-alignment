@@ -245,6 +245,7 @@ def run(
         "heartbeat_interval": cfg.heartbeat_interval,
         "heartbeat_timeout": cfg.heartbeat_timeout,
         "reaper_interval": cfg.reaper_interval,
+        "metrics_port": cfg.metrics_port,
         "log_level": cfg.log_level,
         "run_id": run_id,
     }
@@ -331,6 +332,7 @@ def _run_single_worker(
         heartbeat_interval=cfg.heartbeat_interval,
         heartbeat_timeout=cfg.heartbeat_timeout,
         reaper_interval=cfg.reaper_interval,
+        metrics_port=cfg.metrics_port,
     )
     typer.echo("Starting alignment (1 worker, local)...")
     runner.run()

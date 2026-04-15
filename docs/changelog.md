@@ -621,3 +621,55 @@ Multiple workarounds were tried and failed:
 - Prometheus scrapes `host.docker.internal:9090` to reach the pipeline running on the host machine from inside Docker.
 
 **Status**: Complete
+
+---
+
+### Task 2.8: Docker packaging (production-ready) — 2026-04-15
+
+**What was done**:
+- `Dockerfile` — production multi-stage build:
+  - Stage 1 (build): installs uv, syncs runtime deps only (`--no-dev`), copies `src/`.
+  - Stage 2 (runtime): python:3.11-slim + DIAMOND via miniforge/bioconda (arm64/x86_64), copies venv + src from build stage, non-root user (`da`), health check, `ENTRYPOINT ["python", "-m", "distributed_alignment"]`.
+- Updated `docker-compose.yml` with full production stack:
+  - `worker` service: builds from production Dockerfile, `restart: on-failure`, `deploy.replicas: 2`, shared volume for work data.
+  - `ingest` service: one-off (`profiles: ["setup"]`), mounts `./data/input` read-only.
+  - `prometheus` and `grafana`: unchanged from Task 2.7 but Prometheus config updated to scrape `worker:9090` (Docker service name) in addition to host fallback.
+  - `dev` service: unchanged, builds from Dockerfile.dev.
+  - `shared-data` named volume shared across all services.
+- Updated `observability/prometheus.yml` to scrape three targets: Docker workers (`worker:9090`), host pipeline (`host.docker.internal:9090`), and Ray dashboard (`host.docker.internal:8265`).
+- Updated `.dockerignore` with additional exclusions (data/, demo/, notebooks/, *.dmnd).
+- Updated `README.md` with complete Docker workflow: build → ingest → workers → monitoring → scale → status.
+
+**Decisions made**:
+- Multi-stage build separates build deps (uv) from runtime. The final image doesn't contain uv or dev dependencies — only Python, DIAMOND, and the project code.
+- Each Docker worker container runs with `--workers 1`. Scaling is via `--scale worker=N`, not `--workers N`. This matches the container orchestration model (each container = one worker, Docker/K8s manages replicas).
+- Non-root user (`da`) for security. The `/data` directory is owned by this user.
+- `restart: on-failure` provides container-level fault tolerance: if a worker crashes (segfault, OOM kill), Docker restarts it. The application-level reaper handles the abandoned packages.
+- Ingest is a `profiles: ["setup"]` service — only runs when explicitly invoked, not on `docker-compose up`.
+- Kept `Dockerfile.dev` as-is — dev needs pytest, mypy, ruff, ray, and source mounting. Production doesn't.
+
+**Status**: Complete
+
+---
+
+### Metrics endpoint wiring and Grafana fixes — 2026-04-15
+
+**What was done**:
+- **Wired `start_metrics_server()` into `WorkerRunner.run()`**: Workers now expose a Prometheus HTTP endpoint on startup. Previously, metrics were tracked in-process but never exposed — Prometheus had nothing to scrape. Added `metrics_port` parameter to `WorkerRunner.__init__`, `run_worker_process()`, and the Ray actor config, threaded through from `cfg.metrics_port` in the CLI.
+- **Fixed Grafana provisioning directory structure**: Grafana expects provisioning config in `provisioning/datasources/` and `provisioning/dashboards/` subdirectories. Moved `datasources.yml` and `dashboards.yml` into their respective subdirectories. Dashboard JSON mounted separately to `/var/lib/grafana/dashboards` (referenced by the provider config).
+- **Fixed `RayMetrics.inc(0)` crash**: `ray.util.metrics.Counter.inc()` rejects `value=0` (unlike prometheus_client). Added `if n > 0` guards in `RayMetrics.inc_sequences()` and `RayMetrics.inc_hits()`. This was causing `ValueError: value must be >0, got 0` in Ray integration tests.
+- **Demonstrated full live pipeline**: Re-ingested with `--chunk-size 10` producing 10 query × 50 reference = 500 work packages. 2 Docker workers processed all 500 packages while Grafana dashboard showed real-time progress: packages by state, active workers, total hits, package duration percentiles, throughput, DIAMOND exit codes, and estimated cost — all updating live.
+
+**End-to-end verified workflow**:
+```
+docker-compose run --rm ingest                          # 500 work packages
+docker-compose up -d prometheus grafana                 # monitoring
+docker-compose up -d worker                             # 2 workers
+open http://localhost:3000/d/da-pipeline                # live dashboard
+```
+
+All 500 packages completed, 0 poisoned, 248 successful DIAMOND alignments, p50 duration ~500ms, estimated cost $0.000110.
+
+**Known limitation**: The "Pipeline Progress" gauge shows "No data" — the PromQL division query requires all four state labels to exist simultaneously in the same scrape. Minor dashboard polish for a future fix.
+
+**Status**: Complete

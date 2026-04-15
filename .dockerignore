@@ -1,4 +1,5 @@
 .venv/
+.venv 2/
 .git/
 .pytest_cache/
 .mypy_cache/
@@ -14,3 +15,7 @@ features/
 catalogue.duckdb*
 ref/
 .DS_Store
+data/
+demo/
+notebooks/
+*.dmnd

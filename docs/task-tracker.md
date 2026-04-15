@@ -446,3 +446,22 @@ Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could b
 - Update `docker-compose.yml` (add Prometheus and Grafana services)
 
 **Tests**: Manual — verify dashboard loads and shows data when pipeline runs via docker-compose.
+
+---
+
+### Task 2.8: Docker packaging (production-ready)
+
+**What**: Upgrade from the dev Dockerfile to a proper multi-stage build. Update docker-compose with multi-worker + observability stack.
+
+**Key behaviours**:
+- Multi-stage Dockerfile: build stage (uv sync, compile) → runtime stage (slim, just DIAMOND + Python + installed packages)
+- docker-compose.yml with services: N workers (configurable replica count), Prometheus, Grafana, optional explorer (stub for Phase 4)
+- Shared volume for the work directory
+- Health checks on worker containers
+
+**Files**:
+- `Dockerfile` (production, replaces or supplements Dockerfile.dev)
+- Update `docker-compose.yml`
+- `docker-compose.override.yml` (dev overrides: source mounting, debug ports)
+
+---

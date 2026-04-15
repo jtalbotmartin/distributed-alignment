@@ -112,6 +112,9 @@ def create_alignment_actor(
                     max_idle_time=float(
                         str(cfg.get("max_idle_time", 30.0))
                     ),
+                    metrics_port=int(
+                        str(cfg.get("metrics_port", 9090))
+                    ),
                 )
 
                 completed = runner.run()

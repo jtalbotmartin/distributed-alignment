@@ -15,15 +15,52 @@ Phase 1 (Core Pipeline MVP) complete. See [`docs/task-tracker.md`](docs/task-tra
 - [Product Requirements](docs/03-product-requirements.md)
 - [Architecture Decision Records](docs/adr/)
 
-## Quick Start
+## Running with Docker
+
+The easiest way to run the full pipeline:
+
+```bash
+# 1. Prepare input data
+mkdir -p data/input
+cp tests/fixtures/swissprot_queries.fasta data/input/queries.fasta
+cp tests/fixtures/swissprot_reference.fasta data/input/reference.fasta
+
+# 2. Build images
+docker-compose build
+
+# 3. Ingest: parse and chunk FASTA files
+docker-compose run --rm ingest
+
+# 4. Start workers + monitoring
+docker-compose up -d worker prometheus grafana
+
+# 5. Watch progress
+docker-compose logs -f worker
+
+# 6. Scale workers
+docker-compose up -d --scale worker=4
+
+# 7. Check status
+docker-compose run --rm worker status --work-dir /data/work
+
+# 8. View dashboard
+open http://localhost:3000
+
+# 9. Stop everything
+docker-compose down
+```
+
+- **Grafana dashboard**: `http://localhost:3000` (anonymous access)
+- **Prometheus**: `http://localhost:9091`
+- Workers auto-restart on failure (`restart: on-failure`)
+- Killed workers' packages are reclaimed by the reaper in surviving workers
+
+## Local Development
 
 ### Prerequisites
 
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) for dependency management
-- [DIAMOND](https://github.com/bbuchfink/diamond/wiki) for alignment (or use Docker)
-- Docker (for Ray tests and full reproducibility)
-- GNU Make (optional, for shortcut commands)
+- Python 3.11+, [uv](https://docs.astral.sh/uv/), GNU Make (optional)
+- [DIAMOND](https://github.com/bbuchfink/diamond/wiki) for integration tests (or use Docker)
 
 ### Setup
 
@@ -31,62 +68,28 @@ Phase 1 (Core Pipeline MVP) complete. See [`docs/task-tracker.md`](docs/task-tra
 uv sync
 ```
 
-### Run the pipeline
+### Run the pipeline locally
 
 ```bash
-# Using make (recommended)
 make ingest ARGS="--queries data/queries.fasta --reference data/reference.fasta --output-dir work/"
 make run ARGS="--work-dir work/"
 make status ARGS="--work-dir work/"
 
-# Or directly
-PYTHONPATH=src uv run python -m distributed_alignment ingest \
-    --queries data/queries.fasta \
-    --reference data/reference.fasta \
-    --output-dir work/
-PYTHONPATH=src uv run python -m distributed_alignment run --work-dir work/
-PYTHONPATH=src uv run python -m distributed_alignment status --work-dir work/
-```
-
-Multi-worker and Ray backend:
-```bash
-# Local multiprocessing (4 workers)
+# Multi-worker
 make run ARGS="--work-dir work/ --workers 4"
 
-# Ray backend (requires ray: uv add 'distributed-alignment[ray]')
+# Ray backend (requires: uv add 'distributed-alignment[ray]')
 make run ARGS="--work-dir work/ --workers 4 --backend ray"
 ```
 
 ### Running tests
 
 ```bash
-make test               # Unit tests only (no DIAMOND, no Ray)
-make test-integration   # Integration tests (requires DIAMOND locally)
-make test-all           # All local tests (unit + integration)
-make test-docker        # Full suite in Docker (DIAMOND + Ray, recommended)
+make test               # Unit tests (no DIAMOND needed)
+make test-integration   # Integration tests (requires DIAMOND)
+make test-all           # All local tests
+make test-docker        # Full suite in Docker (DIAMOND + Ray)
 make lint               # Ruff + mypy --strict
 ```
 
-`make test-docker` builds the dev Docker image (includes DIAMOND and Ray) and runs the complete test suite (~205 tests). This is the most reliable way to run all tests, including Ray integration tests which require Docker due to `uv run` / Ray environment conflicts.
-
 Run `make help` to see all available commands.
-
-### Monitoring
-
-Start the monitoring stack alongside the pipeline:
-
-```bash
-# Start Prometheus + Grafana
-docker-compose up -d prometheus grafana
-
-# Run the pipeline (metrics exposed on port 9090)
-make run ARGS="--work-dir work/"
-
-# View the dashboard
-open http://localhost:3000
-```
-
-- **Grafana**: `http://localhost:3000` (anonymous access, no login needed)
-- **Prometheus**: `http://localhost:9091`
-- Dashboard: "distributed-alignment Pipeline" — auto-provisioned with panels for pipeline progress, package duration, throughput, errors, and estimated cost.
-- When using the Ray backend, metrics are automatically aggregated across actors via Ray's built-in metrics system.
