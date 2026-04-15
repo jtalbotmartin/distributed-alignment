@@ -1,14 +1,13 @@
-# Minimal dev stack for running tests with DIAMOND.
-# Full production stack (Ray, Prometheus, Grafana) is Phase 4.
+# Dev stack: tests, monitoring, and pipeline execution.
 #
 # Usage:
-#   docker-compose build dev                                 # rebuild after code changes
-#   docker-compose run dev uv run pytest tests/ -v           # all unit tests
-#   docker-compose run dev uv run pytest tests/ -m integration -v   # integration tests
-#   docker-compose run dev uv run distributed-alignment --help      # CLI
+#   docker-compose build dev                    # rebuild after code changes
+#   docker-compose run --rm dev                 # run all tests
+#   docker-compose up prometheus grafana        # start monitoring stack
+#   docker-compose up -d prometheus grafana     # start monitoring (background)
 #
-# Code is baked into the image at build time. After editing source files,
-# rebuild with `docker-compose build dev` to pick up changes.
+# Grafana: http://localhost:3000 (anonymous access, no login needed)
+# Prometheus: http://localhost:9091
 
 services:
   dev:
@@ -19,3 +18,24 @@ services:
     environment:
       - PYTHONPATH=src
     command: [".venv/bin/python", "-m", "pytest", "tests/", "-v"]
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    depends_on:
+      - prometheus

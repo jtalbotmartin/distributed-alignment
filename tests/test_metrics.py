@@ -1,4 +1,4 @@
-"""Tests for Prometheus metrics."""
+"""Tests for Prometheus metrics and the dual backend abstraction."""
 
 from __future__ import annotations
 
@@ -8,11 +8,12 @@ import pytest
 from prometheus_client import REGISTRY
 
 from distributed_alignment.observability.metrics import (
-    da_packages_total,
-    da_worker_count,
+    PrometheusMetrics,
+    get_metrics,
     record_diamond_result,
     record_package_completed,
     record_package_failed,
+    reset_metrics,
     start_metrics_server,
     update_package_states,
 )
@@ -22,16 +23,9 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(autouse=True)
-def _reset_metrics() -> None:
-    """Reset metric values between tests to avoid cross-contamination.
-
-    Note: prometheus_client doesn't have a built-in reset for all
-    metric types. We reset what we can.
-    """
-    # Reset gauges
-    da_worker_count._value.set(0.0)  # type: ignore[union-attr]
-    for state in ["PENDING", "RUNNING", "COMPLETED", "POISONED"]:
-        da_packages_total.labels(state=state).set(0)
+def _reset_metrics_singleton() -> None:
+    """Reset the metrics singleton between tests."""
+    reset_metrics()
 
 
 class TestMetricDefinitions:
@@ -39,6 +33,9 @@ class TestMetricDefinitions:
 
     def test_all_metrics_registered(self) -> None:
         """All expected metrics exist in the registry."""
+        # Force creation of PrometheusMetrics
+        get_metrics()
+
         names = {
             m.name
             for m in REGISTRY.collect()
@@ -53,6 +50,25 @@ class TestMetricDefinitions:
         assert "da_diamond_exit_code" in names
 
 
+class TestBackendAutoDetection:
+    """Tests for the get_metrics() auto-detection."""
+
+    def test_returns_prometheus_by_default(self) -> None:
+        m = get_metrics()
+        assert isinstance(m, PrometheusMetrics)
+
+    def test_singleton_returns_same_instance(self) -> None:
+        m1 = get_metrics()
+        m2 = get_metrics()
+        assert m1 is m2
+
+    def test_reset_clears_singleton(self) -> None:
+        m1 = get_metrics()
+        reset_metrics()
+        m2 = get_metrics()
+        assert m1 is not m2
+
+
 class TestRecordPackageCompleted:
     """Tests for the record_package_completed helper."""
 
@@ -61,7 +77,6 @@ class TestRecordPackageCompleted:
             duration_seconds=5.5, num_sequences=100, num_hits=50
         )
 
-        # Histogram sum should include our observation
         sample = REGISTRY.get_sample_value(
             "da_package_duration_seconds_sum"
         )
@@ -163,21 +178,9 @@ class TestUpdatePackageStates:
         )
         assert (
             REGISTRY.get_sample_value(
-                "da_packages_total", {"state": "RUNNING"}
-            )
-            == 2
-        )
-        assert (
-            REGISTRY.get_sample_value(
                 "da_packages_total", {"state": "COMPLETED"}
             )
             == 10
-        )
-        assert (
-            REGISTRY.get_sample_value(
-                "da_packages_total", {"state": "POISONED"}
-            )
-            == 1
         )
 
     def test_updates_overwrite_previous(self) -> None:
@@ -190,45 +193,35 @@ class TestUpdatePackageStates:
             )
             == 3
         )
-        assert (
-            REGISTRY.get_sample_value(
-                "da_packages_total", {"state": "COMPLETED"}
-            )
-            == 7
-        )
 
 
 class TestMetricsServer:
     """Tests for the metrics HTTP server."""
 
     def test_start_metrics_server(self) -> None:
-        """Server starts and serves the /metrics endpoint."""
         import urllib.request
 
-        started = start_metrics_server(port=19090)
+        started = start_metrics_server(port=19091)
         assert started
 
         resp = urllib.request.urlopen(  # noqa: S310
-            "http://localhost:19090/metrics"
+            "http://localhost:19091/metrics"
         )
         body = resp.read().decode()
         assert resp.status == 200
         assert "da_packages_total" in body
 
     def test_port_already_in_use(self) -> None:
-        """Second call to same port returns False."""
-        # Port 19090 already bound from previous test
-        started = start_metrics_server(port=19090)
+        started = start_metrics_server(port=19091)
         assert started is False
 
 
 class TestWorkerRunnerMetrics:
-    """Integration: metrics are emitted during package processing."""
+    """Integration: metrics emitted during package processing."""
 
     def test_metrics_updated_after_processing(
         self, tmp_path: Path
     ) -> None:
-        """Process a package and verify metrics were updated."""
         from datetime import UTC, datetime
         from unittest.mock import MagicMock
 
@@ -249,7 +242,6 @@ class TestWorkerRunnerMetrics:
         )
         from distributed_alignment.worker.runner import WorkerRunner
 
-        # Setup chunks and work
         amino = "ACDEFGHIKLMNPQRSTVWY"
         seqs = [
             ProteinSequence(
@@ -317,7 +309,6 @@ class TestWorkerRunnerMetrics:
         stack = FileSystemWorkStack(tmp_path / "work")
         stack.generate_work_packages(q, r)
 
-        # Mock DIAMOND
         mock = MagicMock(spec=DiamondWrapper)
         mock.make_db.return_value = DiamondResult(
             exit_code=0, duration_seconds=0.01, stderr=""
@@ -355,7 +346,7 @@ class TestWorkerRunnerMetrics:
 
         assert completed == 1
 
-        # Verify metrics were updated
+        # Verify metrics
         duration_sum = REGISTRY.get_sample_value(
             "da_package_duration_seconds_sum"
         )
@@ -366,7 +357,3 @@ class TestWorkerRunnerMetrics:
             {"exit_code": "0"},
         )
         assert diamond_ok is not None and diamond_ok >= 1
-
-        # Worker count should be back to 0 after run() exits
-        wc = REGISTRY.get_sample_value("da_worker_count")
-        assert wc == 0

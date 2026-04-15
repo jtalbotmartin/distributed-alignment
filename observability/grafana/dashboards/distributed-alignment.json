@@ -1,0 +1,244 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "title": "Pipeline Overview",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "green", "value": 90 }
+            ]
+          },
+          "unit": "percent",
+          "max": 100,
+          "min": 0
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "da_packages_total{state=\"COMPLETED\"} / (da_packages_total{state=\"COMPLETED\"} + da_packages_total{state=\"PENDING\"} + da_packages_total{state=\"RUNNING\"} + da_packages_total{state=\"POISONED\"}) * 100",
+          "legendFormat": "Progress"
+        }
+      ],
+      "title": "Pipeline Progress",
+      "type": "gauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background"
+      },
+      "targets": [
+        { "expr": "da_packages_total{state=\"PENDING\"}", "legendFormat": "Pending" },
+        { "expr": "da_packages_total{state=\"RUNNING\"}", "legendFormat": "Running" },
+        { "expr": "da_packages_total{state=\"COMPLETED\"}", "legendFormat": "Completed" },
+        { "expr": "da_packages_total{state=\"POISONED\"}", "legendFormat": "Poisoned" }
+      ],
+      "title": "Packages by State",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        { "expr": "da_worker_count", "legendFormat": "Workers" }
+      ],
+      "title": "Active Workers",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "purple", "value": null }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        { "expr": "da_hits_found_total", "legendFormat": "Total Hits" }
+      ],
+      "title": "Total Hits",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
+      "title": "Performance",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "s" }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(da_package_duration_seconds_bucket[5m]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(da_package_duration_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(da_package_duration_seconds_bucket[5m]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "title": "Package Duration (p50/p95/p99)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "ops" }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "rate(da_hits_found_total[1m])",
+          "legendFormat": "Hits/sec"
+        },
+        {
+          "expr": "rate(da_sequences_processed_total[1m])",
+          "legendFormat": "Sequences/sec"
+        }
+      ],
+      "title": "Throughput",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "title": "Errors & Cost",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 17 },
+      "targets": [
+        {
+          "expr": "rate(da_errors_total[1m])",
+          "legendFormat": "{{error_type}}"
+        }
+      ],
+      "title": "Errors by Type",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 17 },
+      "targets": [
+        {
+          "expr": "da_diamond_exit_code_total",
+          "legendFormat": "exit {{exit_code}}"
+        }
+      ],
+      "title": "DIAMOND Exit Codes",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 17 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "da_package_duration_seconds_sum * ${cost_per_cpu_hour} / 3600",
+          "legendFormat": "Estimated Cost"
+        }
+      ],
+      "title": "Estimated Cost",
+      "type": "stat"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["distributed-alignment"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" },
+        "hide": 0,
+        "includeAll": false,
+        "name": "DS_PROMETHEUS",
+        "query": "prometheus",
+        "type": "datasource"
+      },
+      {
+        "current": { "selected": false, "text": "0.0464", "value": "0.0464" },
+        "hide": 0,
+        "name": "cost_per_cpu_hour",
+        "query": "0.0464",
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": { "from": "now-15m", "to": "now" },
+  "title": "distributed-alignment Pipeline",
+  "uid": "da-pipeline"
+}

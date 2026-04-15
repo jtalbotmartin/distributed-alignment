@@ -426,3 +426,23 @@ Tasks 2.6-2.9 (metrics, Grafana, Docker, CI/CD) are more independent and could b
 - Processing a package updates the relevant counters/histograms
 - Package state transitions update da_packages_total gauge
 - Metrics are correct after processing N packages
+
+---
+
+### Task 2.7: Grafana dashboard
+
+**What**: Pre-configured Grafana dashboard JSON that visualises the Prometheus metrics.
+
+**Key behaviours**:
+- Dashboard with panels from TDD §3.8: pipeline progress, worker health, resource usage, cost estimate, error analysis
+- Auto-provisioned via Grafana's provisioning mechanism in docker-compose
+- Connects to Prometheus as a data source
+
+**Files**:
+- `observability/grafana/dashboards/distributed-alignment.json`
+- `observability/grafana/provisioning/dashboards.yml`
+- `observability/grafana/provisioning/datasources.yml`
+- `observability/prometheus.yml` (scrape config targeting the metrics endpoint)
+- Update `docker-compose.yml` (add Prometheus and Grafana services)
+
+**Tests**: Manual — verify dashboard loads and shows data when pipeline runs via docker-compose.

@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # Pipeline metrics (local/multiprocessing backend)
+  # prometheus_client HTTP server on port 9090
+  - job_name: 'distributed-alignment'
+    static_configs:
+      - targets: ['host.docker.internal:9090']
+
+  # Ray metrics (Ray backend)
+  # Ray dashboard exposes Prometheus metrics on port 8265
+  - job_name: 'ray'
+    metrics_path: '/api/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8265']

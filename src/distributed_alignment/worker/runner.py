@@ -286,7 +286,8 @@ class WorkerRunner:
         idle_since: float | None = None
 
         from distributed_alignment.observability.metrics import (
-            da_worker_count,
+            dec_worker,
+            inc_worker,
             update_package_states,
         )
 
@@ -294,7 +295,7 @@ class WorkerRunner:
             "worker_started",
             worker_id=self._worker_id,
         )
-        da_worker_count.inc()
+        inc_worker()
 
         try:
             with ReaperThread(
@@ -340,7 +341,7 @@ class WorkerRunner:
                     if success:
                         completed += 1
         finally:
-            da_worker_count.dec()
+            dec_worker()
 
         logger.info(
             "worker_finished",

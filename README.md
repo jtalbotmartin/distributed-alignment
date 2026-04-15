@@ -70,3 +70,23 @@ make lint               # Ruff + mypy --strict
 `make test-docker` builds the dev Docker image (includes DIAMOND and Ray) and runs the complete test suite (~205 tests). This is the most reliable way to run all tests, including Ray integration tests which require Docker due to `uv run` / Ray environment conflicts.
 
 Run `make help` to see all available commands.
+
+### Monitoring
+
+Start the monitoring stack alongside the pipeline:
+
+```bash
+# Start Prometheus + Grafana
+docker-compose up -d prometheus grafana
+
+# Run the pipeline (metrics exposed on port 9090)
+make run ARGS="--work-dir work/"
+
+# View the dashboard
+open http://localhost:3000
+```
+
+- **Grafana**: `http://localhost:3000` (anonymous access, no login needed)
+- **Prometheus**: `http://localhost:9091`
+- Dashboard: "distributed-alignment Pipeline" — auto-provisioned with panels for pipeline progress, package duration, throughput, errors, and estimated cost.
+- When using the Ray backend, metrics are automatically aggregated across actors via Ray's built-in metrics system.

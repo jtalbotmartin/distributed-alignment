@@ -584,3 +584,40 @@ Multiple workarounds were tried and failed:
 - Counter sample names always end in `_total` regardless of whether the Counter name includes it. Gauge and Histogram names are used as-is.
 
 **Status**: Complete
+
+---
+
+### Task 2.7: Grafana dashboard and metrics backend abstraction — 2026-04-15
+
+**What was done**:
+
+**Part 1 — Dual metrics backend**:
+- Refactored `observability/metrics.py` into a dual-backend architecture: `PrometheusMetrics` (local/multiprocessing) and `RayMetrics` (Ray actors). Both implement the same interface: `observe_duration()`, `inc_sequences()`, `inc_hits()`, `inc_worker()`, `dec_worker()`, `inc_error()`, `inc_diamond_exit()`, `set_package_state()`.
+- `get_metrics()` auto-detects the backend: uses `RayMetrics` when `ray.is_initialized()`, `PrometheusMetrics` otherwise. Returns a singleton.
+- `reset_metrics()` clears the singleton for testing.
+- prometheus_client metrics are now module-level objects (registered once) with `PrometheusMetrics` holding references. Prevents "Duplicated timeseries" errors when `reset_metrics()` is called between tests.
+- `start_metrics_server()` is a no-op for the Ray backend (Ray exposes metrics via its own endpoint).
+- Added `inc_worker()`/`dec_worker()` helper functions used by `WorkerRunner.run()`.
+- `RayMetrics` uses `ray.util.metrics` with tag-based labels instead of prometheus_client's positional labels.
+
+**Part 2 — Grafana dashboard and monitoring stack**:
+- `observability/prometheus.yml` — Prometheus config scraping `host.docker.internal:9090` every 5s.
+- `observability/grafana/provisioning/datasources.yml` — auto-provisions Prometheus as default datasource.
+- `observability/grafana/provisioning/dashboards.yml` — auto-provisions dashboard from JSON.
+- `observability/grafana/dashboards/distributed-alignment.json` — 10-panel dashboard:
+  - Row 1 (Overview): Pipeline Progress gauge, Packages by State stats, Active Workers, Total Hits
+  - Row 2 (Performance): Package Duration p50/p95/p99 timeseries, Throughput (hits/sec, sequences/sec)
+  - Row 3 (Errors & Cost): Errors by Type timeseries, DIAMOND Exit Codes bar gauge, Estimated Cost stat with configurable `$cost_per_cpu_hour` variable (default 0.0464)
+  - Auto-refresh 5s, 15-minute time range, anonymous access
+- Updated `docker-compose.yml` with `prometheus` and `grafana` services alongside the existing `dev` service.
+- Updated `README.md` with Monitoring section.
+
+**Tests**: 16 metrics tests — 3 new backend tests (auto-detection, singleton, reset) plus 13 existing tests updated for the new architecture.
+
+**Decisions made**:
+- prometheus_client metrics are module-level singletons, not instance attributes. This prevents duplicate registration errors when `reset_metrics()` creates a new `PrometheusMetrics` instance. The `PrometheusMetrics` class just holds references.
+- `RayMetrics.inc_worker()`/`dec_worker()` use `getattr(self.worker_count, "_value", 0)` for manual tracking since `ray.util.metrics.Gauge` doesn't support `.inc()`/`.dec()` — only `.set()`.
+- Grafana uses anonymous access with Viewer role — no login needed for the dashboard. Admin password is `admin` for configuration changes.
+- Prometheus scrapes `host.docker.internal:9090` to reach the pipeline running on the host machine from inside Docker.
+
+**Status**: Complete
