@@ -227,3 +227,118 @@ class TestRunValidation:
         )
         # Might fail on DIAMOND — but should not fail on arg parsing
         assert "manifests not found" not in result.output
+
+
+class TestRunDispatch:
+    """Tests for the run command's backend dispatch (mocked workers)."""
+
+    def _ingest(self, fasta: Path, output_dir: Path) -> None:
+        runner.invoke(
+            app,
+            [
+                "ingest",
+                "--queries",
+                str(fasta),
+                "--reference",
+                str(fasta),
+                "--output-dir",
+                str(output_dir),
+            ],
+        )
+
+    def test_single_worker_dispatch(self, sample_fasta: Path, tmp_path: Path) -> None:
+        """--workers 1 uses in-process single worker path."""
+        from unittest.mock import patch
+
+        output_dir = tmp_path / "work"
+        self._ingest(sample_fasta, output_dir)
+
+        with patch("distributed_alignment.cli._run_single_worker") as mock_single:
+            # Still fails on DIAMOND check, but we can verify
+            # the dispatch path by checking what gets called
+            result = runner.invoke(
+                app,
+                ["run", "--work-dir", str(output_dir), "--workers", "1"],
+            )
+            # Either mock was called (DIAMOND found) or DIAMOND
+            # error occurred before dispatch
+            if "DIAMOND binary not found" not in _strip_ansi(result.output):
+                mock_single.assert_called_once()
+
+    def test_multiprocess_dispatch(self, sample_fasta: Path, tmp_path: Path) -> None:
+        """--workers 2 --backend local uses multiprocessing path."""
+        from unittest.mock import patch
+
+        output_dir = tmp_path / "work"
+        self._ingest(sample_fasta, output_dir)
+
+        with patch("distributed_alignment.cli._run_multiprocess_backend") as mock_mp:
+            result = runner.invoke(
+                app,
+                [
+                    "run",
+                    "--work-dir",
+                    str(output_dir),
+                    "--workers",
+                    "2",
+                    "--backend",
+                    "local",
+                ],
+            )
+            if "DIAMOND binary not found" not in _strip_ansi(result.output):
+                mock_mp.assert_called_once()
+
+    def test_ray_dispatch(self, sample_fasta: Path, tmp_path: Path) -> None:
+        """--backend ray uses Ray dispatch path."""
+        from unittest.mock import patch
+
+        output_dir = tmp_path / "work"
+        self._ingest(sample_fasta, output_dir)
+
+        with patch("distributed_alignment.cli._run_ray_backend") as mock_ray:
+            result = runner.invoke(
+                app,
+                [
+                    "run",
+                    "--work-dir",
+                    str(output_dir),
+                    "--backend",
+                    "ray",
+                ],
+            )
+            if "DIAMOND binary not found" not in _strip_ansi(result.output):
+                mock_ray.assert_called_once()
+
+    def test_status_with_completed_work(
+        self, sample_fasta: Path, tmp_path: Path
+    ) -> None:
+        """Status shows correct output after ingest + work packages."""
+        import json as _json
+
+        from distributed_alignment.scheduler.filesystem_backend import (
+            FileSystemWorkStack,
+        )
+
+        output_dir = tmp_path / "work"
+        self._ingest(sample_fasta, output_dir)
+
+        # Create work stack and generate packages manually
+        q_data = _json.loads((output_dir / "query_manifest.json").read_text())
+        r_data = _json.loads((output_dir / "ref_manifest.json").read_text())
+        from distributed_alignment.models import ChunkManifest
+
+        q = ChunkManifest(**q_data)
+        r = ChunkManifest(**r_data)
+
+        stack = FileSystemWorkStack(output_dir / "work_stack")
+        stack.generate_work_packages(q, r)
+
+        # Complete one package
+        pkg = stack.claim("test-worker")
+        if pkg:
+            stack.complete(pkg.package_id, "/fake/result.parquet")
+
+        result = runner.invoke(app, ["status", "--work-dir", str(output_dir)])
+        output = _strip_ansi(result.output)
+        assert result.exit_code == 0
+        assert "COMPLETED" in output

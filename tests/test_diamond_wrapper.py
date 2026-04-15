@@ -128,7 +128,10 @@ class TestDiamondResult:
 
 
 class TestRunCommand:
-    """Tests for subprocess execution error handling (without DIAMOND)."""
+    """Tests for subprocess execution error handling (without DIAMOND).
+
+    Uses mocked subprocess.run to cover all _run_command paths.
+    """
 
     def test_file_not_found_error(self) -> None:
         wrapper = DiamondWrapper(binary="/nonexistent/diamond_xyz_fake")
@@ -140,6 +143,124 @@ class TestRunCommand:
         assert result.exit_code == -2
         assert result.error_message is not None
         assert "not found" in result.error_message
+
+    def test_success_path(self) -> None:
+        """Mock a successful subprocess execution."""
+        from unittest.mock import MagicMock
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stderr = ""
+        mock_proc.stdout = ""
+
+        with patch("subprocess.run", return_value=mock_proc):
+            wrapper = DiamondWrapper(binary="diamond")
+            result = wrapper.make_db(Path("/tmp/f.fasta"), Path("/tmp/db"))
+
+        assert result.exit_code == 0
+        assert result.error_message is None
+
+    def test_oom_exit_code_137(self) -> None:
+        """Mock OOM kill (exit code 137)."""
+        from unittest.mock import MagicMock
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 137
+        mock_proc.stderr = "Killed"
+
+        with patch("subprocess.run", return_value=mock_proc):
+            wrapper = DiamondWrapper(binary="diamond")
+            result = wrapper.run_blastp(
+                Path("/tmp/q.fasta"),
+                Path("/tmp/db.dmnd"),
+                Path("/tmp/out.tsv"),
+            )
+
+        assert result.exit_code == 137
+        assert result.error_message is not None
+        assert "OOM" in result.error_message
+
+    def test_generic_failure(self) -> None:
+        """Mock a non-zero, non-137 exit code."""
+        from unittest.mock import MagicMock
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 1
+        mock_proc.stderr = "some error"
+
+        with patch("subprocess.run", return_value=mock_proc):
+            wrapper = DiamondWrapper(binary="diamond")
+            result = wrapper.run_blastp(
+                Path("/tmp/q.fasta"),
+                Path("/tmp/db.dmnd"),
+                Path("/tmp/out.tsv"),
+            )
+
+        assert result.exit_code == 1
+        assert result.error_message is not None
+        assert "some error" in result.error_message
+
+    def test_timeout_expired(self) -> None:
+        """Mock subprocess.TimeoutExpired."""
+        import subprocess
+
+        with patch(
+            "subprocess.run",
+            side_effect=subprocess.TimeoutExpired(cmd="diamond", timeout=5),
+        ):
+            wrapper = DiamondWrapper(binary="diamond")
+            result = wrapper.make_db(Path("/tmp/f.fasta"), Path("/tmp/db"), timeout=5)
+
+        assert result.exit_code == -1
+        assert result.error_message is not None
+        assert "timed out" in result.error_message
+
+    def test_check_available_success(self) -> None:
+        """Mock a successful check_available."""
+        from unittest.mock import MagicMock
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stdout = "diamond version 2.1.10"
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/diamond"),
+            patch("subprocess.run", return_value=mock_proc),
+        ):
+            wrapper = DiamondWrapper(binary="diamond")
+            assert wrapper.check_available() is True
+
+    def test_check_available_version_fails(self) -> None:
+        """Binary found but version command fails."""
+        from unittest.mock import MagicMock
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 1
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/diamond"),
+            patch("subprocess.run", return_value=mock_proc),
+        ):
+            wrapper = DiamondWrapper(binary="diamond")
+            assert wrapper.check_available() is False
+
+    def test_blastp_sets_output_path_on_success(self) -> None:
+        """On success, run_blastp sets output_path in result."""
+        from unittest.mock import MagicMock
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stderr = ""
+
+        with patch("subprocess.run", return_value=mock_proc):
+            wrapper = DiamondWrapper(binary="diamond")
+            result = wrapper.run_blastp(
+                Path("/tmp/q.fasta"),
+                Path("/tmp/db.dmnd"),
+                Path("/tmp/out.tsv"),
+            )
+
+        assert result.output_path == "/tmp/out.tsv"
 
 
 # --- Integration tests (require DIAMOND binary) ---

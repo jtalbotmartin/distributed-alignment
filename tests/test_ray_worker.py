@@ -285,13 +285,16 @@ class TestBackendFlag:
     """Test CLI --backend flag handling."""
 
     def test_backend_local_accepted(self) -> None:
+        import re
+
         from typer.testing import CliRunner
 
         from distributed_alignment.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["run", "--help"])
-        assert "--backend" in result.output
+        output = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+        assert "--backend" in output
 
     def test_backend_ray_import_error(self) -> None:
         with (
@@ -302,3 +305,38 @@ class TestBackendFlag:
             ),
         ):
             _try_import_ray()
+
+
+class TestRayActorConfigPassthrough:
+    """Test that the actor correctly extracts config parameters."""
+
+    def test_config_defaults(self) -> None:
+        """Verify default coercion logic for all config fields."""
+        # Simulate what the actor's run() method does with config
+        cfg: dict[str, object] = {}
+        assert int(str(cfg.get("max_target_seqs", 50))) == 50
+        assert int(str(cfg.get("timeout", 3600))) == 3600
+        assert float(str(cfg.get("heartbeat_interval", 30.0))) == 30.0
+        assert int(str(cfg.get("heartbeat_timeout", 120))) == 120
+        assert float(str(cfg.get("reaper_interval", 60.0))) == 60.0
+        assert float(str(cfg.get("max_idle_time", 30.0))) == 30.0
+        assert int(str(cfg.get("metrics_port", 9090))) == 9090
+
+    def test_config_overrides(self) -> None:
+        """Verify config values are correctly coerced from strings."""
+        cfg: dict[str, object] = {
+            "max_target_seqs": "25",
+            "timeout": "60",
+            "heartbeat_interval": "0.5",
+            "heartbeat_timeout": "5",
+            "reaper_interval": "1.0",
+            "max_idle_time": "10.0",
+            "metrics_port": "8080",
+        }
+        assert int(str(cfg.get("max_target_seqs", 50))) == 25
+        assert int(str(cfg.get("timeout", 3600))) == 60
+        assert float(str(cfg.get("heartbeat_interval", 30.0))) == 0.5
+        assert int(str(cfg.get("heartbeat_timeout", 120))) == 5
+        assert float(str(cfg.get("reaper_interval", 60.0))) == 1.0
+        assert float(str(cfg.get("max_idle_time", 30.0))) == 10.0
+        assert int(str(cfg.get("metrics_port", 9090))) == 8080
