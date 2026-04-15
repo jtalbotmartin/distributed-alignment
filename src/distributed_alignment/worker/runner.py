@@ -285,51 +285,62 @@ class WorkerRunner:
         max_backoff = 5.0
         idle_since: float | None = None
 
+        from distributed_alignment.observability.metrics import (
+            da_worker_count,
+            update_package_states,
+        )
+
         logger.info(
             "worker_started",
             worker_id=self._worker_id,
         )
+        da_worker_count.inc()
 
-        with ReaperThread(
-            self._work_stack,
-            timeout_seconds=self._heartbeat_timeout,
-            interval=self._reaper_interval,
-        ):
-            while not self._shutdown.is_set():
-                package = self._work_stack.claim(self._worker_id)
+        try:
+            with ReaperThread(
+                self._work_stack,
+                timeout_seconds=self._heartbeat_timeout,
+                interval=self._reaper_interval,
+            ):
+                while not self._shutdown.is_set():
+                    # Update state gauges on each poll cycle
+                    update_package_states(self._work_stack.status())
 
-                if package is None:
-                    # Nothing to do — track idle time
-                    now = time.monotonic()
-                    if idle_since is None:
-                        idle_since = now
+                    package = self._work_stack.claim(self._worker_id)
 
-                    idle_duration = now - idle_since
-                    if idle_duration >= self._max_idle_time:
-                        logger.info(
-                            "worker_idle_exit",
-                            worker_id=self._worker_id,
-                            idle_seconds=round(idle_duration, 1),
-                        )
-                        break
+                    if package is None:
+                        now = time.monotonic()
+                        if idle_since is None:
+                            idle_since = now
 
-                    # Backoff before retrying
-                    time.sleep(backoff)
-                    backoff = min(backoff * 2, max_backoff)
-                    continue
+                        idle_duration = now - idle_since
+                        if idle_duration >= self._max_idle_time:
+                            logger.info(
+                                "worker_idle_exit",
+                                worker_id=self._worker_id,
+                                idle_seconds=round(
+                                    idle_duration, 1
+                                ),
+                            )
+                            break
 
-                # Got a package — reset idle tracking and backoff
-                idle_since = None
-                backoff = 0.5
+                        time.sleep(backoff)
+                        backoff = min(backoff * 2, max_backoff)
+                        continue
 
-                with HeartbeatSender(
-                    self._work_stack,
-                    package.package_id,
-                    interval=self._heartbeat_interval,
-                ):
-                    success = self._process_package(package)
-                if success:
-                    completed += 1
+                    idle_since = None
+                    backoff = 0.5
+
+                    with HeartbeatSender(
+                        self._work_stack,
+                        package.package_id,
+                        interval=self._heartbeat_interval,
+                    ):
+                        success = self._process_package(package)
+                    if success:
+                        completed += 1
+        finally:
+            da_worker_count.dec()
 
         logger.info(
             "worker_finished",
@@ -348,6 +359,11 @@ class WorkerRunner:
         Returns:
             True if the package was successfully completed.
         """
+        from distributed_alignment.observability.metrics import (
+            record_package_completed,
+            record_package_failed,
+        )
+
         log = logger.bind(
             package_id=package.package_id,
             worker_id=self._worker_id,
@@ -355,25 +371,40 @@ class WorkerRunner:
             ref_chunk=package.ref_chunk_id,
         )
         log.info("processing_package")
+        start = time.monotonic()
 
         try:
-            result_path = self._run_alignment(package)
+            result_path, num_hits = self._run_alignment(package)
         except Exception as exc:
             error_msg = f"{type(exc).__name__}: {exc}"
             log.error("package_failed", error=error_msg)
             self._work_stack.fail(package.package_id, error_msg)
+            record_package_failed("exception")
             return False
 
         if result_path is None:
             return False
 
+        duration = time.monotonic() - start
         self._work_stack.complete(
             package.package_id, str(result_path)
         )
-        log.info("package_completed", result_path=str(result_path))
+        record_package_completed(
+            duration_seconds=duration,
+            num_sequences=0,  # Not tracked at this level
+            num_hits=num_hits,
+        )
+        log.info(
+            "package_completed",
+            result_path=str(result_path),
+            duration=round(duration, 2),
+            hits=num_hits,
+        )
         return True
 
-    def _run_alignment(self, package: WorkPackage) -> Path | None:
+    def _run_alignment(
+        self, package: WorkPackage
+    ) -> tuple[Path | None, int]:
         """Execute the alignment for a work package.
 
         Converts Parquet chunks to FASTA, builds the reference DB if
@@ -384,10 +415,18 @@ class WorkerRunner:
             package: The work package to process.
 
         Returns:
-            Path to the result Parquet file, or None on failure.
+            Tuple of (result Parquet path, hit count). Path is None
+            on failure.
         """
+        from distributed_alignment.observability.metrics import (
+            record_diamond_result,
+            record_package_failed,
+        )
+
         # Locate chunk Parquet files
-        query_parquet = self._find_chunk_parquet(package.query_chunk_id)
+        query_parquet = self._find_chunk_parquet(
+            package.query_chunk_id
+        )
         ref_parquet = self._find_chunk_parquet(package.ref_chunk_id)
 
         if query_parquet is None or ref_parquet is None:
@@ -396,7 +435,8 @@ class WorkerRunner:
                 f"query={query_parquet}, ref={ref_parquet}"
             )
             self._work_stack.fail(package.package_id, error)
-            return None
+            record_package_failed("missing_chunk")
+            return None, 0
 
         # Create temp working directory for this package
         work_dir = self._results_dir / f".tmp_{package.package_id}"
@@ -412,9 +452,13 @@ class WorkerRunner:
                 package.ref_chunk_id, ref_parquet, work_dir
             )
             if ref_db_path is None:
-                error = f"Failed to build reference DB for {package.ref_chunk_id}"
+                error = (
+                    "Failed to build reference DB "
+                    f"for {package.ref_chunk_id}"
+                )
                 self._work_stack.fail(package.package_id, error)
-                return None
+                record_package_failed("makedb_failed")
+                return None, 0
 
             # Run alignment
             raw_output = work_dir / "output.tsv"
@@ -427,26 +471,34 @@ class WorkerRunner:
                 timeout=self._timeout,
             )
 
+            record_diamond_result(blast_result.exit_code)
+
             if blast_result.exit_code != 0:
                 error = (
                     blast_result.error_message
                     or f"blastp failed: exit {blast_result.exit_code}"
                 )
                 self._work_stack.fail(package.package_id, error)
-                return None
+                error_type = (
+                    "oom"
+                    if blast_result.exit_code == 137
+                    else "diamond_error"
+                )
+                record_package_failed(error_type)
+                return None, 0
 
             # Parse output and write as Parquet
             table = parse_output(raw_output)
+            num_hits = table.num_rows
             result_parquet = (
                 self._results_dir
                 / f"{package.query_chunk_id}_{package.ref_chunk_id}.parquet"
             )
             pq.write_table(table, result_parquet)
 
-            return result_parquet
+            return result_parquet, num_hits
 
         finally:
-            # Clean up temp directory
             import shutil
 
             shutil.rmtree(work_dir, ignore_errors=True)

@@ -545,3 +545,42 @@ Multiple workarounds were tried and failed:
 - Updated `README.md` with current test commands, multi-worker/Ray usage, and Phase 2 status.
 
 **Status**: Complete
+
+---
+
+### Task 2.6: Prometheus metrics — 2026-04-15
+
+**What was done**:
+- `src/distributed_alignment/observability/metrics.py` — 7 Prometheus metrics matching the TDD spec:
+  - `da_packages_total` (Gauge by state): work packages per state
+  - `da_package_duration_seconds` (Histogram): time to process one package
+  - `da_sequences_processed` (Counter): total sequences aligned
+  - `da_hits_found` (Counter): total alignment hits
+  - `da_worker_count` (Gauge): active workers
+  - `da_errors` (Counter by error_type): errors categorised as oom/timeout/diamond_error/write_error/missing_chunk/exception
+  - `da_diamond_exit_code` (Counter by exit_code): DIAMOND exit codes
+- Helper functions: `start_metrics_server(port)`, `record_package_completed()`, `record_package_failed()`, `record_diamond_result()`, `update_package_states()`.
+- Updated `src/distributed_alignment/observability/__init__.py` to export all metrics functions.
+- Integrated metrics into `WorkerRunner`:
+  - `run()`: increments/decrements `da_worker_count`, calls `update_package_states()` on each poll cycle.
+  - `_process_package()`: times each package, calls `record_package_completed()` on success.
+  - `_run_alignment()`: calls `record_diamond_result()` after every DIAMOND execution, `record_package_failed()` with categorised error types on failure.
+- Changed `_run_alignment()` return type from `Path | None` to `tuple[Path | None, int]` to return hit count alongside the result path.
+- Added `prometheus-client>=0.20` to runtime dependencies.
+- `tests/test_metrics.py` — 13 tests across 6 classes: metric definitions, record helpers (histogram/counters/gauges), metrics server (HTTP endpoint + port-busy handling), and WorkerRunner integration.
+
+**Decisions made**:
+- Counter names don't include `_total` suffix (prometheus_client adds it automatically). Named `da_sequences_processed` not `da_sequences_processed_total` — the exposed metric is `da_sequences_processed_total` per Prometheus convention.
+- Metrics are emitted from `WorkerRunner` (not from `FileSystemWorkStack`) because the worker has timing information and knows the semantic context (was this a success? what type of error?).
+- `update_package_states()` is called on every poll cycle iteration, not just on state changes. This is cheap (reads a few directory listings) and ensures the gauge always reflects current state, including changes from the reaper.
+- `start_metrics_server()` catches `OSError` for port-busy — in multi-worker mode, only the first worker's server succeeds. Others silently skip (metrics are still tracked in-process, just not exposed via HTTP). The CLI or an orchestrator would handle aggregation.
+- Multiprocess metrics sharing is deferred — each process has its own prometheus_client registry. For production, a push gateway or prometheus_client's multiprocess mode would be needed. Documented as a known limitation.
+
+**Problems encountered**:
+- prometheus_client counter naming: defining `Counter("da_sequences_processed_total", ...)` creates a sample named `da_sequences_processed_total_total` (double `_total`). Fixed by dropping `_total` from the counter definition name — prometheus_client adds the suffix automatically.
+
+**Learnings**:
+- prometheus_client's `REGISTRY.get_sample_value()` is the right way to assert metric values in tests — no HTTP server needed, reads directly from the in-process registry.
+- Counter sample names always end in `_total` regardless of whether the Counter name includes it. Gauge and Histogram names are used as-is.
+
+**Status**: Complete
