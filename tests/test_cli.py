@@ -19,37 +19,48 @@ if TYPE_CHECKING:
 runner = CliRunner()
 
 
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from text."""
+    import re
+
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
 class TestHelpOutput:
     """Tests that --help works for all subcommands."""
 
     def test_main_help(self) -> None:
         result = runner.invoke(app, ["--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "ingest" in result.output
-        assert "run" in result.output
-        assert "status" in result.output
-        assert "explore" in result.output
+        assert "ingest" in output
+        assert "run" in output
+        assert "status" in output
+        assert "explore" in output
 
     def test_ingest_help(self) -> None:
         result = runner.invoke(app, ["ingest", "--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "--queries" in result.output
-        assert "--reference" in result.output
-        assert "--output-dir" in result.output
-        assert "--chunk-size" in result.output
+        assert "--queries" in output
+        assert "--reference" in output
+        assert "--output-dir" in output
+        assert "--chunk-size" in output
 
     def test_run_help(self) -> None:
         result = runner.invoke(app, ["run", "--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "--work-dir" in result.output
-        assert "--workers" in result.output
-        assert "--sensitivity" in result.output
-        assert "--top-n" in result.output
+        assert "--work-dir" in output
+        assert "--workers" in output
+        assert "--sensitivity" in output
+        assert "--top-n" in output
 
     def test_status_help(self) -> None:
         result = runner.invoke(app, ["status", "--help"])
+        output = _strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "--work-dir" in result.output
+        assert "--work-dir" in output
 
 
 class TestExplore:
