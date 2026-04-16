@@ -781,3 +781,29 @@ Files created:
 - The tab-pipe-tab format in `.dmp` files is deceptively tricky. The trailing delimiter pattern means naive splitting produces dirty field values. Stripping the line-level terminator before splitting is cleaner than per-field cleanup.
 
 **Status**: Complete
+
+---
+
+### Task 3.1: Taxonomic enrichment — 2026-04-16
+
+**What was done**: Built the enrichment pipeline that annotates merged alignment results with NCBI taxonomy lineage data and computes per-query taxonomic profiles.
+
+Files created:
+- `src/distributed_alignment/taxonomy/enricher.py` — Two main functions: `enrich_results()` reads merged Parquet, extracts accessions from `subject_id`, batch-looks up lineages via `TaxonomyDB`, appends 8 taxonomy columns (taxon_id, species, genus, family, order, class, phylum, kingdom), writes enriched Parquet. `compute_taxonomic_profiles()` uses DuckDB SQL to aggregate: GROUP BY query_id, phylum → hit_count, mean_percent_identity, best_evalue per phylum per query. Also defines `ENRICHED_SCHEMA` and `PROFILE_SCHEMA` as PyArrow schemas.
+- `tests/test_enricher.py` — 17 tests across 5 classes: accession extraction (5 format variants), basic enrichment (E. coli annotation, multi-phyla, unmapped preservation, plain accession, empty input), schema validation (taxonomy columns present, originals preserved, taxon_id type), taxonomic profiles (3-phyla distribution, statistics correctness, multi-query, schema).
+- Updated `src/distributed_alignment/taxonomy/__init__.py` — exports `enrich_results` and `compute_taxonomic_profiles`.
+
+**Decisions made**:
+- Used PyArrow column-append rather than DuckDB JOIN for adding taxonomy columns to the merged table. The enrichment needs per-row accession extraction (Python string split), so building Python arrays and appending them to the Arrow table is simpler than constructing a DuckDB temp table and joining. The accession lookups are deduplicated first (unique subject_ids → unique accessions), so the Python loop only does dict lookups per row — fast even for millions of hits.
+- Used DuckDB for the taxonomic profile aggregation — GROUP BY with AVG/MIN/COUNT is exactly what DuckDB excels at, and it reads the enriched Parquet directly without loading into Python.
+- Unmapped accessions get `"unknown"` for all taxonomy string columns and null for `taxon_id`. This preserves the hit row (not dropped) and makes downstream queries simple — filter `WHERE phylum != 'unknown'` to exclude unmapped, or `WHERE taxon_id IS NULL` to find them.
+- DuckDB's `.arrow()` returns a `RecordBatchReader`, not a `Table` — need `.read_all()` before passing to `pq.write_table()`. Same issue that was encountered in the merger.
+
+**Problems encountered**:
+- DuckDB `.arrow()` returns `RecordBatchReader` not `pyarrow.Table`. Calling `pq.write_table()` on a RecordBatchReader fails with `TypeError: expected pyarrow.lib.Table, got pyarrow.lib.RecordBatchReader`. Fixed by chaining `.arrow().read_all()`.
+
+**Learnings**:
+- The accession deduplication step is the key performance optimization. Real alignment results may have millions of rows but only thousands of unique reference proteins. Looking up thousands of accessions is instant; looking up millions would be slow. The pattern is: deduplicate → batch lookup → build column arrays via dict lookups per row.
+- PyArrow's `table.append_column()` returns a new table (immutable), so the pattern is `table = table.append_column(...)` in a loop. This is efficient because PyArrow uses zero-copy for the existing columns.
+
+**Status**: Complete
