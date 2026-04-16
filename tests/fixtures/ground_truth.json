@@ -1,0 +1,2502 @@
+{
+  "C0SP85": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "C0SPC1": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O05394": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O05512": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O06724": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O06728": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O06967": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O07006": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O07012": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O07532": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O07566": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O07600": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O07623": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O08336": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O08394": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31422": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31461": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31506": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31523": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31526": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31527": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31539": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31602": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31611": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31612": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31616": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31618": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31644": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31645": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31662": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31675": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31677": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31678": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31691": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31718": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31749": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31760": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31774": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31775": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O31854": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32001": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32062": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32076": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32129": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32131": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32141": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32142": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32148": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32163": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32164": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32215": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32219": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32220": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32223": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O32224": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34313": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34327": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34344": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34349": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34398": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34403": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34425": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34431": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34450": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34481": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34483": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34507": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34508": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34513": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34521": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34525": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34527": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34528": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34530": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34539": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34559": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34580": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34614": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34676": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O34680": {
+    "organism": "Bacillus subtilis 168",
+    "taxon_id": "224308",
+    "phylum": "Bacillota"
+  },
+  "O08333": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "O88037": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "O88038": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "O88070": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P15474": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P16250": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P54741": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P72392": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P95722": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q7AKE4": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q7AKG8": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q7AKG9": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q7AKI9": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q7AKQ5": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9AD92": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9AK25": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9F3C7": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9FCA6": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9K3J3": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9K498": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KXR9": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KYG7": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KZC7": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KZF5": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9L1E4": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9L1K2": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9L1L8": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9L268": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9RDS6": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9RJH9": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9RKY0": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9S2A5": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9WX11": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9X839": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9XA14": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9ZBQ7": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9ZBU1": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9ZBV4": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "O51917": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "O54151": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "O86560": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "O86683": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "O86754": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "O88039": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P15106": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P18183": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P25941": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P33158": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P35886": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P80574": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "P80735": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q06539": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q7AKE5": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q7AKN0": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q7AKQ6": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q7AY50": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q8CJM2": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q8CJX6": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q934F8": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q93J06": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q93RV9": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9ACU1": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9AD93": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9ADK0": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9AK82": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9F315": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9FBT8": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9FC99": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9FCA7": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9K3U0": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9K451": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9K499": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9K4B1": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KXR5": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KXR6": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KY04": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KYH3": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KZP3": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9KZZ7": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q9L091": {
+    "organism": "Streptomyces coelicolor A3(2)",
+    "taxon_id": "100226",
+    "phylum": "Actinomycetota"
+  },
+  "Q88CC1": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88CZ8": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88E10": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88E47": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88F88": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88FF8": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88FY2": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88GJ9": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88JH0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88JH5": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88JK6": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88JU3": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88L02": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88LS1": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88M11": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88Q83": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88QT2": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A171": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P59479": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88BX6": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88CT0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88CT3": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88CW2": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88CY4": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88D93": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88DU5": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88DU6": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88DZ0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88EH0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88EI9": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88EQ6": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88F51": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88F89": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88FI7": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88FQ8": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88FT3": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88FX8": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88FX9": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88FY1": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88FY3": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88GQ0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88H32": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88HH7": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88IU0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88JX8": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88JX9": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88KV1": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88MG1": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88N81": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88NI1": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88NN6": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88NV1": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88P32": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88PK0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88PP0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88PX6": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88QQ4": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88QS0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88QT3": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88RA3": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88RB9": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88RS0": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A116": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A118": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A120": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A126": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A128": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A136": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A153": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A155": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A175": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P0A181": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P59285": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P59300": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P59319": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P59392": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P59400": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P59604": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "P59612": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q88BW9": {
+    "organism": "Pseudomonas putida KT2440",
+    "taxon_id": "160488",
+    "phylum": "Pseudomonadota"
+  },
+  "Q8TL28": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TM02": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8THA9": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8THF6": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8THG2": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8THG6": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8THK1": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TI88": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TIB8": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TIB9": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TJK1": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TJS1": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TJS2": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TJZ5": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TK00": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TKU7": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TKW5": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TLB0": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TLB1": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TLB2": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TNY3": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TNY4": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TPT4": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TQD4": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TQQ6": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TQS4": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TRA4": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TS34": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TSG7": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TSX9": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TSY2": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TUB9": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TUC0": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "P0CG28": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "P58796": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "P58837": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "P58838": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "P58847": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "P58859": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "P58869": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "P58886": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "P61933": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TGX1": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TGX2": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TGX6": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TGX7": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TH44": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TH87": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8TH90": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "Q8THA5": {
+    "organism": "Methanosarcina acetivorans C2A",
+    "taxon_id": "188937",
+    "phylum": "Euryarchaeota"
+  },
+  "A0A0B7P3V8": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "D6VTK4": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O13297": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O13329": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O13516": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O13525": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O13527": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O13535": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O13539": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O13547": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O13563": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O14455": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O14467": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O60200": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O74700": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O75012": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "O94742": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00044": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00127": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00128": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00163": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00175": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00330": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00331": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00358": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00359": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00360": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00401": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00410": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00420": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00424": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00431": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00445": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00546": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00549": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00560": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00572": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00635": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00724": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00729": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00812": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00815": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00817": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00830": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00854": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00890": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00924": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00925": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00927": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00937": {
+    "organism": "Saccharomyces cerevisiae S288C",
+    "taxon_id": "559292",
+    "phylum": "Ascomycota"
+  },
+  "P00879": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P0A3C7": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P27709": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P38446": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P50214": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P80506": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YMD9": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YQB1": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YSQ6": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YYI3": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8Z0C8": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "O52748": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P00964": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P0A410": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P29986": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P29987": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P29988": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P31694": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P46242": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P58554": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P58559": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P70758": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P80555": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P80556": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P80557": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P80562": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q7A2C5": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YKG3": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YLG0": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YLP6": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YM52": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YMD4": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YP11": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YP69": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YP80": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YQ14": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YQB2": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YQL2": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YQS7": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YRC9": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YSY4": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YSZ3": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YT18": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YT40": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YT50": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YUM5": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YVR1": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YWF0": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YXQ7": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "Q8YZ70": {
+    "organism": "Nostoc sp. PCC 7120",
+    "taxon_id": "103690",
+    "phylum": "Cyanobacteriota"
+  },
+  "P21777": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "P27000": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "P56206": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "P61497": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "P80373": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "P98005": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q53VY2": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q53W17": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q53W83": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q53WG9": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q53WI0": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q56218": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q56221": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q56223": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q56232": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SH28": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SHN3": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SHN6": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SHT5": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SHZ4": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SHZ8": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SI82": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SIA8": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SIC2": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SID7": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SIJ1": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SIL0": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SIY4": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SJ58": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SJ65": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SJC4": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SK28": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SK82": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SK88": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SKC5": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SKN9": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SL87": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SM16": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SM25": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "Q5SMC7": {
+    "organism": "Thermus thermophilus HB8",
+    "taxon_id": "300852",
+    "phylum": "Deinococcota"
+  },
+  "P26811": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P39460": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P50384": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P50389": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P60849": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P61991": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P95867": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P95949": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P95989": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q7LXU0": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97TX9": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97U27": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97U29": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97U96": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97V23": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97VT7": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97W02": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97W94": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97WG8": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97X43": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97YD4": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97YM2": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97ZE2": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97ZF5": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q97ZZ8": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q980A5": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q980M3": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q980Q4": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q980R9": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q980S6": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q980T8": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q9UWU1": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q9UWY8": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q9UXE4": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q9UXG1": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P14909": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P22498": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P30925": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P35026": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "P39461": {
+    "organism": "Sulfolobus solfataricus P2",
+    "taxon_id": "273057",
+    "phylum": "Thermoproteota"
+  },
+  "Q7UG04": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UGJ6": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UGM3": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UGZ7": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UHU7": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UIY1": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UJ58": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UJ69": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UJ86": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UKT5": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UKY0": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UMW2": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UN00": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UPM4": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7URM7": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7USA1": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UUW9": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UUZ7": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7UWD1": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "P59814": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "P59872": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "P59883": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "P59912": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7TTY7": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7TTY8": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7TTY9": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7TTZ0": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7TTZ4": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7TTZ5": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  },
+  "Q7TU07": {
+    "organism": "Rhodopirellula baltica SH1",
+    "taxon_id": "243090",
+    "phylum": "Planctomycetota"
+  }
+}

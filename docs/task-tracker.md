@@ -511,3 +511,22 @@ Tasks are ordered to build on each other:
 - GitHub Actions CI passes on push
 - All existing Phase 1 tests still pass
 
+# `distributed-alignment` — Phase 3 Task Breakdown (Revised)
+
+## Phase 3: Enrichment & Features
+
+**Goal**: Transform raw alignment results into biological insight and ML-ready data. This is the phase where bioinformatics domain knowledge shows — it turns DIAMOND output into something scientifically meaningful, and the real metagenomic dataset makes the dark matter story tangible.
+
+---
+
+## Prerequisite Tasks
+
+### Task 3.pre.1: Scientific context document
+
+Create `docs/scientific-context.md` explaining the biological motivation and real-world workflow. See the separate prompt for this.
+
+### Task 3.pre.2: Dataset assembly
+
+Download scripts and fixtures for the tiered dataset strategy. See the separate prompt for this.
+
+---

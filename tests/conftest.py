@@ -13,6 +13,12 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 SWISSPROT_QUERIES = FIXTURES_DIR / "swissprot_queries.fasta"
 SWISSPROT_REFERENCE = FIXTURES_DIR / "swissprot_reference.fasta"
 
+# Taxonomically diverse fixtures (from download_test_fixtures.py)
+METAGENOME_QUERIES = FIXTURES_DIR / "metagenome_queries.fasta"
+DIVERSE_REFERENCE = FIXTURES_DIR / "diverse_reference.fasta"
+PATHOGEN_REFERENCE = FIXTURES_DIR / "pathogen_reference.fasta"
+GROUND_TRUTH = FIXTURES_DIR / "ground_truth.json"
+
 
 @pytest.fixture
 def work_dir(tmp_path: Path) -> Path:
@@ -110,3 +116,48 @@ def integration_test_data(
         )
 
     return queries, reference
+
+
+@pytest.fixture
+def metagenome_queries_path() -> Path:
+    """Path to the metagenome query fixtures.
+
+    Skips the test if the fixture hasn't been downloaded yet.
+    Run ``python scripts/download_test_fixtures.py`` to create it.
+    """
+    if not METAGENOME_QUERIES.exists():
+        pytest.skip(
+            "Metagenome fixtures not downloaded. "
+            "Run: python scripts/download_test_fixtures.py"
+        )
+    return METAGENOME_QUERIES
+
+
+@pytest.fixture
+def diverse_reference_path() -> Path:
+    """Path to the diverse reference fixtures.
+
+    Skips the test if the fixture hasn't been downloaded yet.
+    Run ``python scripts/download_test_fixtures.py`` to create it.
+    """
+    if not DIVERSE_REFERENCE.exists():
+        pytest.skip(
+            "Diverse reference fixtures not downloaded. "
+            "Run: python scripts/download_test_fixtures.py"
+        )
+    return DIVERSE_REFERENCE
+
+
+@pytest.fixture
+def pathogen_reference_path() -> Path:
+    """Path to the pathogen reference fixtures.
+
+    Skips the test if the fixture hasn't been downloaded yet.
+    Run ``python scripts/download_test_fixtures.py`` to create it.
+    """
+    if not PATHOGEN_REFERENCE.exists():
+        pytest.skip(
+            "Pathogen reference fixtures not downloaded. "
+            "Run: python scripts/download_test_fixtures.py"
+        )
+    return PATHOGEN_REFERENCE

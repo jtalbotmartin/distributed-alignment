@@ -700,3 +700,53 @@ All 500 packages completed, 0 poisoned, 248 successful DIAMOND alignments, p50 d
 **Also done**: Applied `ruff format` to normalise code style across all 42 Python files. No functional changes — only formatting (line wrapping, quote style, trailing commas).
 
 **Status**: Complete
+
+---
+
+## Phase 3: Enrichment & Features
+
+### Dataset assembly (Phase 3 prerequisite) — 2026-04-16
+
+**What was done**:
+- `docs/scientific-context.md` — ~1,050-word document explaining metagenomics, the alignment workflow, the dark matter problem, and how the pipeline contributes. Written for software engineers, rigorous enough for bioinformaticians.
+- `scripts/download_test_fixtures.py` — downloads taxonomically diverse Swiss-Prot fixtures via UniProt REST API:
+  - **Query set** (500 sequences, 9 organisms): simulates a soil metagenomic community. Headers anonymised (accession + protein name only, no organism info). Organisms span Bacteria, Archaea, and Eukarya across 9 phyla.
+  - **Reference set** (2,650 sequences, 13 organisms): broad taxonomic diversity including prokaryotes, eukaryotes, and extremophiles.
+  - **Ground truth** (`ground_truth.json`): maps each query accession to its true organism, taxon ID, and phylum for validation.
+- `scripts/download_metagenome.py` — Tier 2: downloads real soil metagenome proteins from MGnify + full Swiss-Prot (~300MB to `data/metagenome/`).
+- `scripts/download_stress_test.py` — Tier 3: downloads multiple MGnify analyses + UniRef50 (~1-5GB to `data/stress_test/`).
+- `data/README.md` — explains the tier structure and download commands.
+- Updated `tests/conftest.py` with `metagenome_queries_path` and `diverse_reference_path` fixtures (skip-if-missing pattern).
+
+**Tier 1 fixtures downloaded and committed**:
+- `tests/fixtures/metagenome_queries.fasta` — 500 sequences, ~227KB
+- `tests/fixtures/diverse_reference.fasta` — 2,650 sequences, ~1.6MB
+- `tests/fixtures/ground_truth.json` — 500 entries, ~60KB
+- Total: ~1.9MB (within 2MB target)
+
+**Dataset design rationale**:
+- Query organisms chosen to simulate a realistic soil metagenome: *Bacillus*, *Streptomyces*, *Pseudomonas* (common soil bacteria), *Methanosarcina* (archaeal methanogens), *Nostoc* (cyanobacteria), *Thermus*/*Sulfolobus* (extremophiles), *Rhodopirellula* (undersampled planctomycete). This provides genuine taxonomic diversity for enrichment testing.
+- Headers anonymised to simulate the real metagenomics workflow: you don't know which organism a protein came from until you align it. Ground truth enables validation.
+- Reference set includes overlapping organisms with queries (e.g. *B. subtilis*, *S. cerevisiae*) to ensure DIAMOND produces real hits, plus organisms not in the query set to test taxonomic enrichment breadth.
+
+**Status**: Complete
+
+---
+
+### Scientific context update + pathogen surveillance dataset — 2026-04-16
+
+**What was done**:
+
+**Part 1 — Scientific context rewrite**:
+- Rewrote Section 3 (distributed alignment) to clearly explain queries vs references, what chunking actually does (computational parallelisation, not biological filtering), and that every query is compared against every reference.
+- Added pathogen surveillance subsection to Section 5 — connecting the same pipeline architecture to clinical metagenomics (*C. difficile*, *S. aureus*, diagnostic classifiers).
+
+**Part 2 — Pathogen dataset extension**:
+- Added `PATHOGEN_ORGANISMS` to `download_test_fixtures.py`: *C. difficile* 630, *S. enterica* Typhimurium, *S. aureus* NCTC 8325, *K. pneumoniae* HS11286 (400 sequences total).
+- Created `tests/fixtures/pathogen_reference.fasta` (400 sequences, ~217KB) as a separate file — keeps existing diverse_reference.fasta stable for existing tests.
+- Made download script idempotent — skips existing fixtures, only downloads what's missing.
+- Added clinical gut metagenome download to `scripts/download_metagenome.py` — MGnify HMP gut study, saves to `data/clinical/gut_metagenome.fasta`.
+- Updated `data/README.md` with two analysis scenarios (biodiscovery vs pathogen surveillance) and ground truth explanation.
+- Added `pathogen_reference_path` fixture to `tests/conftest.py` (skip-if-missing pattern).
+
+**Status**: Complete
