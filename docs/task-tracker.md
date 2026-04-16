@@ -561,3 +561,55 @@ Download scripts and fixtures for the tiered dataset strategy. See the separate 
 - Lineage for organisms in the diverse reference set (B. subtilis, Synechocystis, S. cerevisiae, etc.)
 - Unknown taxon ID → graceful handling
 - Cached DuckDB reused on second call
+
+---
+
+### Task 3.1: Taxonomic enrichment
+
+**What**: Join alignment hits against the taxonomy data to annotate each hit with its taxonomic lineage, then compute per-query taxonomic profiles.
+
+**Key behaviours**:
+- Read merged Parquet results
+- Map subject_id (Swiss-Prot accession) → taxon_id via the accession2taxid mapping. Swiss-Prot accessions in FASTA headers follow the format `sp|ACCESSION|NAME_SPECIES` — extract the accession (e.g., P0A8M3 from `sp|P0A8M3|SYT_ECOLI`).
+- Look up full lineage for each taxon_id
+- Write enriched Parquet with taxonomy columns (taxon_id, species, genus, family, order, class, phylum, kingdom)
+- Compute per-query taxonomic profiles: for each query, distribution of hits across phyla
+- Handle unmapped accessions as "unknown" (don't drop the hit)
+
+**Files**:
+- `src/distributed_alignment/taxonomy/enricher.py`
+- `tests/test_enricher.py`
+
+**Tests**:
+- Enrich with diverse reference data → hits from multiple phyla correctly annotated
+- Per-query taxonomic profile: a conserved protein (e.g., ribosomal) hitting across phyla → profile shows multiple entries
+- Unmapped accession → "unknown" taxonomy, hit preserved
+- Empty results → valid empty enriched Parquet
+
+---
+
+### Task 3.2: Alignment feature extraction (Stream A)
+
+**What**: Compute per-query statistical features from the enriched alignment results. One row per query sequence.
+
+**Features**:
+- hit_count, mean_percent_identity, max_percent_identity
+- mean_evalue_log10, mean_alignment_length, std_alignment_length
+- best_hit_query_coverage (needs query length from chunks)
+- taxonomic_entropy (Shannon entropy of phylum distribution)
+- num_phyla, num_kingdoms
+- Queries with zero hits: hit_count=0, statistical features as NaN
+
+**Files**:
+- `src/distributed_alignment/features/__init__.py`
+- `src/distributed_alignment/features/alignment_features.py`
+- `tests/test_alignment_features.py`
+
+**Tests**:
+- Features for a query with diverse hits → correct statistics
+- Taxonomic entropy: 1 phylum → 0, evenly across 3 phyla → ~1.58
+- Zero-hit query → hit_count=0, NaN for statistics
+- Output schema matches FeatureRow model
+- Determinism: same input → same output
+
+---

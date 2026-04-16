@@ -34,7 +34,7 @@ Thumbs.db
 *.dmnd
 work/
 results/
-features/
+/features/
 catalogue.duckdb
 catalogue.duckdb.wal
 

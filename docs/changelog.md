@@ -807,3 +807,32 @@ Files created:
 - PyArrow's `table.append_column()` returns a new table (immutable), so the pattern is `table = table.append_column(...)` in a loop. This is efficient because PyArrow uses zero-copy for the existing columns.
 
 **Status**: Complete
+
+---
+
+### Task 3.2: Alignment feature extraction (Stream A) — 2026-04-16
+
+**What was done**: Built the per-query feature extractor that computes alignment statistics, taxonomic diversity metrics, and coverage from enriched alignment results.
+
+Files created:
+- `src/distributed_alignment/features/alignment_features.py` — `extract_alignment_features()` computes 10 features per query sequence via a single DuckDB CTE query: hit_count, mean/max percent_identity, mean_evalue_log10, mean/std alignment_length, best_hit_query_coverage, taxonomic_entropy (Shannon), num_phyla, num_kingdoms. Uses LEFT JOIN against the full query list from chunk Parquet files to include zero-hit queries. Adds metadata columns (feature_version, run_id, created_at). Defines `FEATURE_SCHEMA` as PyArrow schema.
+- `tests/test_alignment_features.py` — 16 tests across 5 classes: basic features (hit count, identity, alignment length, evalue log10), taxonomic entropy (single phylum = 0, uniform 3 phyla = log2(3), skewed 3:1 ≈ 0.811), zero-hit queries (included with hit_count=0, null float features), coverage and edge cases (best_hit_query_coverage, evalue=0 sentinel, single-hit std is null, unknown phyla excluded), determinism and schema validation.
+- Updated `src/distributed_alignment/features/__init__.py` — exports `extract_alignment_features`.
+
+**Decisions made**:
+- All feature computation in a single DuckDB CTE query. Five CTEs: `agg` (basic aggregations), `best` (best-hit alignment length for coverage), `phylum_dist` + `query_totals` + `entropy` (Shannon entropy from phylum distribution). This avoids multiple passes over the data and leverages DuckDB's optimizer.
+- Zero-hit queries get hit_count=0 and num_phyla/num_kingdoms=0 via COALESCE, but float features (mean_identity, entropy, coverage, etc.) are NULL. NULL correctly distinguishes "no data" from computed values like 0 (which means "all hits in one phylum" for entropy). Downstream pandas reads convert NULLs to NaN automatically.
+- Query lengths are read from `chunks/queries/*.parquet` (the chunk files from ingestion), not from the enriched results. This ensures the feature output includes all query sequences even if they have zero alignment hits.
+- evalue=0 (perfect matches) handled with `CASE WHEN evalue > 0 THEN LOG10(evalue) ELSE -999.0 END` sentinel value. This avoids -inf from log10(0) while clearly marking these values as extreme. The -999 is distinguishable from any real log10(evalue).
+- `STDDEV_SAMP` (not STDDEV_POP) for std_alignment_length — sample standard deviation is undefined for n=1, so single-hit queries get NULL. This is correct behaviour, not a bug.
+
+**Problems encountered**:
+- DuckDB `.arrow()` returns `RecordBatchReader` not `Table` — same issue as Task 3.1. Chained `.arrow().read_all()`.
+- Ruff's line length limit (88) conflicts with readable SQL formatting (aligned AS clauses). Reformatted SQL to use line-broken `AS` clauses rather than right-padded alignment.
+- `datetime.timezone.utc` flagged by ruff UP017 — should use `datetime.UTC` alias (Python 3.11+).
+
+**Learnings**:
+- DuckDB CTEs are powerful for complex multi-step feature engineering. The entropy calculation requires computing phylum distributions, proportions, and the Shannon formula — all expressible as CTEs without materialising intermediate results in Python.
+- LEFT JOIN against a master query list is essential for producing a complete feature table. Without it, queries with no alignment hits would be silently dropped, creating a biased feature matrix.
+
+**Status**: Complete
