@@ -1,0 +1,182 @@
+1	|	root	|		|	scientific name	|
+131567	|	cellular organisms	|		|	scientific name	|
+2	|	Bacteria	|	Bacteria <bacteria>	|	scientific name	|
+2	|	Monera	|	Monera <bacteria>	|	synonym	|
+2	|	Procaryotae	|	Procaryotae <bacteria>	|	synonym	|
+2157	|	Archaea	|		|	scientific name	|
+2157	|	Archaebacteria	|		|	synonym	|
+2759	|	Eukaryota	|		|	scientific name	|
+2759	|	Eukarya	|		|	synonym	|
+1224	|	Pseudomonadota	|		|	scientific name	|
+1224	|	Proteobacteria	|		|	synonym	|
+1236	|	Gammaproteobacteria	|		|	scientific name	|
+28211	|	Alphaproteobacteria	|		|	scientific name	|
+91347	|	Enterobacterales	|		|	scientific name	|
+543	|	Enterobacteriaceae	|		|	scientific name	|
+561	|	Escherichia	|		|	scientific name	|
+562	|	Escherichia coli	|		|	scientific name	|
+562	|	E. coli	|		|	common name	|
+562	|	Bacterium coli	|		|	synonym	|
+83333	|	Escherichia coli K-12	|		|	scientific name	|
+590	|	Salmonella	|		|	scientific name	|
+28901	|	Salmonella enterica	|		|	scientific name	|
+90371	|	Salmonella enterica subsp. enterica	|		|	scientific name	|
+99287	|	Salmonella enterica subsp. enterica serovar Typhimurium str. LT2	|		|	scientific name	|
+570	|	Klebsiella	|		|	scientific name	|
+573	|	Klebsiella pneumoniae	|		|	scientific name	|
+72407	|	Klebsiella pneumoniae subsp. pneumoniae	|		|	scientific name	|
+272620	|	Klebsiella pneumoniae subsp. pneumoniae HS11286	|		|	scientific name	|
+72274	|	Pseudomonadales	|		|	scientific name	|
+135621	|	Pseudomonadaceae	|		|	scientific name	|
+286	|	Pseudomonas	|		|	scientific name	|
+303	|	Pseudomonas putida	|		|	scientific name	|
+160488	|	Pseudomonas putida KT2440	|		|	scientific name	|
+204458	|	Caulobacterales	|		|	scientific name	|
+76892	|	Caulobacteraceae	|		|	scientific name	|
+155	|	Caulobacter	|		|	scientific name	|
+366602	|	Caulobacter vibrioides	|		|	scientific name	|
+190650	|	Caulobacter vibrioides CB15	|		|	scientific name	|
+1239	|	Bacillota	|		|	scientific name	|
+1239	|	Firmicutes	|		|	synonym	|
+91061	|	Bacilli	|		|	scientific name	|
+1385	|	Bacillales	|		|	scientific name	|
+186817	|	Bacillaceae	|		|	scientific name	|
+1386	|	Bacillus	|		|	scientific name	|
+1423	|	Bacillus subtilis	|		|	scientific name	|
+224308	|	Bacillus subtilis subsp. subtilis str. 168	|		|	scientific name	|
+90964	|	Staphylococcaceae	|		|	scientific name	|
+1279	|	Staphylococcus	|		|	scientific name	|
+1280	|	Staphylococcus aureus	|		|	scientific name	|
+46170	|	Staphylococcus aureus subsp. aureus	|		|	scientific name	|
+93061	|	Staphylococcus aureus subsp. aureus NCTC 8325	|		|	scientific name	|
+186801	|	Clostridia	|		|	scientific name	|
+186802	|	Eubacteriales	|		|	scientific name	|
+186806	|	Peptostreptococcaceae	|		|	scientific name	|
+1870884	|	Clostridioides	|		|	scientific name	|
+1496	|	Clostridioides difficile	|		|	scientific name	|
+272563	|	Clostridioides difficile 630	|		|	scientific name	|
+31979	|	Clostridiaceae	|		|	scientific name	|
+1485	|	Clostridium	|		|	scientific name	|
+1488	|	Clostridium acetobutylicum	|		|	scientific name	|
+272562	|	Clostridium acetobutylicum ATCC 824	|		|	scientific name	|
+201174	|	Actinomycetota	|		|	scientific name	|
+201174	|	Actinobacteria	|		|	synonym	|
+1760	|	Actinomycetia	|		|	scientific name	|
+85011	|	Streptomycetales	|		|	scientific name	|
+2062	|	Streptomycetaceae	|		|	scientific name	|
+1883	|	Streptomyces	|		|	scientific name	|
+1902	|	Streptomyces coelicolor	|		|	scientific name	|
+100226	|	Streptomyces coelicolor A3(2)	|		|	scientific name	|
+85007	|	Mycobacteriales	|		|	scientific name	|
+1762	|	Mycobacteriaceae	|		|	scientific name	|
+1763	|	Mycobacterium	|		|	scientific name	|
+1773	|	Mycobacterium tuberculosis	|		|	scientific name	|
+83332	|	Mycobacterium tuberculosis H37Rv	|		|	scientific name	|
+1798711	|	Cyanobacteriota	|		|	scientific name	|
+1117	|	Cyanophyceae	|		|	scientific name	|
+1161	|	Nostocales	|		|	scientific name	|
+1164	|	Nostocaceae	|		|	scientific name	|
+1163	|	Nostoc	|		|	scientific name	|
+103690	|	Nostoc sp. PCC 7120	|		|	scientific name	|
+35823	|	Synechococcales	|		|	scientific name	|
+1148	|	Synechocystis	|		|	scientific name	|
+1142	|	Synechocystis sp. PCC 6803	|		|	scientific name	|
+1111708	|	Synechocystis sp. PCC 6803 substr. Kazusa	|		|	scientific name	|
+1297	|	Deinococcota	|		|	scientific name	|
+188786	|	Deinococci	|		|	scientific name	|
+68933	|	Thermales	|		|	scientific name	|
+188787	|	Thermaceae	|		|	scientific name	|
+270	|	Thermus	|		|	scientific name	|
+274	|	Thermus thermophilus	|		|	scientific name	|
+300852	|	Thermus thermophilus HB8	|		|	scientific name	|
+118964	|	Deinococcales	|		|	scientific name	|
+183710	|	Deinococcaceae	|		|	scientific name	|
+1298	|	Deinococcus	|		|	scientific name	|
+1299	|	Deinococcus radiodurans	|		|	scientific name	|
+243230	|	Deinococcus radiodurans R1	|		|	scientific name	|
+203682	|	Planctomycetota	|		|	scientific name	|
+203683	|	Planctomycetia	|		|	scientific name	|
+2607577	|	Planctomycetales	|		|	scientific name	|
+59646	|	Planctomycetaceae	|		|	scientific name	|
+265525	|	Rhodopirellula	|		|	scientific name	|
+265606	|	Rhodopirellula baltica	|		|	scientific name	|
+243090	|	Rhodopirellula baltica SH 1	|		|	scientific name	|
+200783	|	Campylobacterota	|		|	scientific name	|
+29547	|	Campylobacteria	|		|	scientific name	|
+213849	|	Campylobacterales	|		|	scientific name	|
+72294	|	Campylobacteraceae	|		|	scientific name	|
+194	|	Campylobacter	|		|	scientific name	|
+197	|	Campylobacter jejuni	|		|	scientific name	|
+192222	|	Campylobacter jejuni subsp. jejuni NCTC 11168	|		|	scientific name	|
+200795	|	Aquificota	|		|	scientific name	|
+32066	|	Aquificae	|		|	scientific name	|
+85115	|	Aquificales	|		|	scientific name	|
+85117	|	Aquificaceae	|		|	scientific name	|
+66976	|	Aquifex	|		|	scientific name	|
+66977	|	Aquifex aeolicus	|		|	scientific name	|
+224324	|	Aquifex aeolicus VF5	|		|	scientific name	|
+28890	|	Euryarchaeota	|		|	scientific name	|
+224756	|	Methanomicrobia	|		|	scientific name	|
+94695	|	Methanosarcinales	|		|	scientific name	|
+2206	|	Methanosarcinaceae	|		|	scientific name	|
+2209	|	Methanosarcina	|		|	scientific name	|
+2214	|	Methanosarcina acetivorans	|		|	scientific name	|
+188937	|	Methanosarcina acetivorans C2A	|		|	scientific name	|
+183963	|	Halobacteria	|		|	scientific name	|
+2235	|	Halobacteriales	|		|	scientific name	|
+2236	|	Halobacteriaceae	|		|	scientific name	|
+2238	|	Halobacterium	|		|	scientific name	|
+2239	|	Halobacterium salinarum	|		|	scientific name	|
+64091	|	Halobacterium salinarum NRC-1	|		|	scientific name	|
+28889	|	Thermoproteota	|		|	scientific name	|
+28889	|	Crenarchaeota	|		|	synonym	|
+183924	|	Thermoprotei	|		|	scientific name	|
+2280	|	Sulfolobales	|		|	scientific name	|
+118883	|	Sulfolobaceae	|		|	scientific name	|
+2281	|	Sulfolobus	|		|	scientific name	|
+2287	|	Sulfolobus solfataricus	|		|	scientific name	|
+273057	|	Sulfolobus solfataricus P2	|		|	scientific name	|
+33154	|	Opisthokonta	|		|	scientific name	|
+33208	|	Metazoa	|		|	scientific name	|
+6072	|	Eumetazoa	|		|	scientific name	|
+33213	|	Bilateria	|		|	scientific name	|
+33511	|	Deuterostomia	|		|	scientific name	|
+7711	|	Chordata	|		|	scientific name	|
+89593	|	Craniata	|		|	scientific name	|
+7742	|	Vertebrata	|		|	scientific name	|
+7776	|	Gnathostomata	|		|	scientific name	|
+117570	|	Teleostomi	|		|	scientific name	|
+117571	|	Euteleostomi	|		|	scientific name	|
+8287	|	Sarcopterygii	|		|	scientific name	|
+32523	|	Tetrapoda	|		|	scientific name	|
+32524	|	Amniota	|		|	scientific name	|
+40674	|	Mammalia	|		|	scientific name	|
+32525	|	Theria	|		|	scientific name	|
+9347	|	Eutheria	|		|	scientific name	|
+314146	|	Euarchontoglires	|		|	scientific name	|
+9443	|	Primates	|		|	scientific name	|
+376913	|	Haplorrhini	|		|	scientific name	|
+314293	|	Simiiformes	|		|	scientific name	|
+9526	|	Catarrhini	|		|	scientific name	|
+314295	|	Hominoidea	|		|	scientific name	|
+9604	|	Hominidae	|		|	scientific name	|
+9605	|	Homo	|		|	scientific name	|
+9606	|	Homo sapiens	|		|	scientific name	|
+9606	|	human	|		|	common name	|
+4751	|	Fungi	|		|	scientific name	|
+451864	|	Dikarya	|		|	scientific name	|
+4890	|	Ascomycota	|		|	scientific name	|
+716545	|	Saccharomycotina	|		|	scientific name	|
+147537	|	Saccharomycetes	|		|	scientific name	|
+4892	|	Saccharomycetales	|		|	scientific name	|
+4893	|	Saccharomycetaceae	|		|	scientific name	|
+4930	|	Saccharomyces	|		|	scientific name	|
+4932	|	Saccharomyces cerevisiae	|		|	scientific name	|
+559292	|	Saccharomyces cerevisiae S288C	|		|	scientific name	|
+33090	|	Viridiplantae	|		|	scientific name	|
+35493	|	Streptophyta	|		|	scientific name	|
+3398	|	Magnoliopsida	|		|	scientific name	|
+3699	|	Brassicales	|		|	scientific name	|
+3700	|	Brassicaceae	|		|	scientific name	|
+3701	|	Arabidopsis	|		|	scientific name	|
+3702	|	Arabidopsis thaliana	|		|	scientific name	|

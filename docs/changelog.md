@@ -750,3 +750,34 @@ All 500 packages completed, 0 poisoned, 248 successful DIAMOND alignments, p50 d
 - Added `pathogen_reference_path` fixture to `tests/conftest.py` (skip-if-missing pattern).
 
 **Status**: Complete
+
+---
+
+### Task 3.0: NCBI taxonomy loader — 2026-04-16
+
+**What was done**: Built the taxonomy module that parses NCBI taxonomy dumps into a queryable DuckDB-backed database with lineage lookups.
+
+Files created:
+- `src/distributed_alignment/taxonomy/ncbi_loader.py` — `TaxonomyDB` class: parses `nodes.dmp`, `names.dmp`, and `accession2taxid` into DuckDB tables, loads the tree into Python dicts for fast lineage walking, provides `get_lineage()`, `get_taxon_id_for_accession()`, `get_lineage_for_accession()`, and `batch_lineage()` methods.
+- `src/distributed_alignment/taxonomy/__init__.py` — Exports `TaxonomyDB`.
+- `tests/fixtures/taxonomy/nodes.dmp` — 171 hand-curated NCBI taxonomy nodes covering all organisms in the test data (E. coli through Homo sapiens, all query, reference, and pathogen organisms) with complete lineage paths from each species to root.
+- `tests/fixtures/taxonomy/names.dmp` — Scientific names (and some synonyms/common names for testing the filter) for all 171 nodes.
+- `tests/fixtures/taxonomy/accession2taxid.tsv` — 38 accessions from `diverse_reference.fasta` and `pathogen_reference.fasta` mapped to their correct taxon IDs.
+- `scripts/download_taxonomy.sh` — Idempotent shell script to download NCBI taxdump + `prot.accession2taxid.gz` to `data/taxonomy/`.
+- `tests/test_taxonomy_loader.py` — 48 tests across 10 test classes.
+
+**Decisions made**:
+- Tree walking done in Python dicts rather than DuckDB recursive CTEs. The NCBI tree has ~2.5M nodes but as a Python dict of `{int: int}` it's only ~100MB — fast enough for interactive lookups and avoids complex SQL. DuckDB is only used for accession lookups where an indexed scan matters at scale.
+- NCBI's "superkingdom" rank maps to the "kingdom" key in lineage output (Bacteria, Archaea, Eukaryota). The NCBI "kingdom" rank (Metazoa, Fungi, Viridiplantae) is traversed during the walk but not captured — it's a eukaryote-only rank that would be confusing in the output alongside superkingdom.
+- `from_ncbi_dump` is idempotent: if the DuckDB file exists, it's loaded directly without re-parsing. This is the cache mechanism — parse once (~seconds for fixtures, ~minutes for full NCBI), then load instantly on subsequent runs.
+- Fixture `accession2taxid.tsv` uses the same 4-column format as NCBI's `prot.accession2taxid` (accession, accession.version, taxid, gi) so the parser works identically on real and fixture data.
+
+**Problems encountered**:
+- NCBI `.dmp` files terminate each line with `\t|` (tab-pipe). When splitting on `\t|\t`, the last field retains a trailing `\t|` that isn't stripped by `.strip()` alone (since `|` isn't whitespace). Initial parse produced ranks like `"no rank\t|"` instead of `"no rank"`. Fixed by `rstrip("|")` on the full line before splitting.
+- Building the fixture nodes.dmp required tracing complete lineage paths from every test species to root. For Homo sapiens alone, this is 29 intermediate nodes (through Mammalia, Chordata, Metazoa, Opisthokonta etc.). Missing a single intermediate node breaks the tree walk. Verified all paths manually against NCBI taxonomy browser structure.
+
+**Learnings**:
+- NCBI taxonomy has many "no rank" and "clade" intermediate nodes between the standard Linnaean ranks. The lineage walker needs to traverse all of these but only capture names at the 7 ranks of interest. This is why a dict-based walk is simpler than a SQL approach — the SQL would need to filter ranks during the recursive CTE.
+- The tab-pipe-tab format in `.dmp` files is deceptively tricky. The trailing delimiter pattern means naive splitting produces dirty field values. Stripping the line-level terminator before splitting is cleaner than per-field cleanup.
+
+**Status**: Complete

@@ -530,3 +530,34 @@ Create `docs/scientific-context.md` explaining the biological motivation and rea
 Download scripts and fixtures for the tiered dataset strategy. See the separate prompt for this.
 
 ---
+
+## Core Tasks
+
+### Task 3.0: NCBI taxonomy loader
+
+**What**: Parse the NCBI taxonomy dump into a queryable format (DuckDB tables) so alignment hits can be annotated with taxonomic lineage.
+
+**Key behaviours**:
+- Download script for the NCBI taxonomy dump (`taxdump.tar.gz`) — `names.dmp`, `nodes.dmp`
+- Download script for protein-to-taxon mapping (`prot.accession2taxid.gz`) — maps Swiss-Prot/UniProt accessions to taxon IDs
+- Parse `nodes.dmp` into a DuckDB table: taxon_id, parent_taxon_id, rank
+- Parse `names.dmp` into a DuckDB table: taxon_id, name (scientific name only)
+- Build a lineage lookup: given a taxon_id, return the full lineage (species, genus, family, order, class, phylum, kingdom) by walking the tree
+- Cache the parsed taxonomy as a DuckDB file so it only needs to be built once
+- For test fixtures: commit a small taxonomy subset covering the organisms in our test data
+
+**Files**:
+- `src/distributed_alignment/taxonomy/__init__.py`
+- `src/distributed_alignment/taxonomy/ncbi_loader.py`
+- `scripts/download_taxonomy.sh`
+- `tests/test_taxonomy_loader.py`
+- `tests/fixtures/taxonomy/` — small subset of nodes.dmp, names.dmp, accession2taxid
+
+**Tests**:
+- Parse fixture nodes.dmp → correct parent-child relationships
+- Parse fixture names.dmp → correct scientific names
+- Lineage lookup for E. coli (562) → correct full lineage up to Bacteria
+- Lineage lookup for Homo sapiens (9606) → correct full lineage up to Eukaryota
+- Lineage for organisms in the diverse reference set (B. subtilis, Synechocystis, S. cerevisiae, etc.)
+- Unknown taxon ID → graceful handling
+- Cached DuckDB reused on second call

@@ -1,0 +1,171 @@
+1	|	1	|	no rank	|
+131567	|	1	|	no rank	|
+2	|	131567	|	superkingdom	|
+2157	|	131567	|	superkingdom	|
+2759	|	131567	|	superkingdom	|
+1224	|	2	|	phylum	|
+1236	|	1224	|	class	|
+28211	|	1224	|	class	|
+91347	|	1236	|	order	|
+543	|	91347	|	family	|
+561	|	543	|	genus	|
+562	|	561	|	species	|
+83333	|	562	|	no rank	|
+590	|	543	|	genus	|
+28901	|	590	|	species	|
+90371	|	28901	|	subspecies	|
+99287	|	90371	|	no rank	|
+570	|	543	|	genus	|
+573	|	570	|	species	|
+72407	|	573	|	subspecies	|
+272620	|	72407	|	no rank	|
+72274	|	1236	|	order	|
+135621	|	72274	|	family	|
+286	|	135621	|	genus	|
+303	|	286	|	species	|
+160488	|	303	|	no rank	|
+204458	|	28211	|	order	|
+76892	|	204458	|	family	|
+155	|	76892	|	genus	|
+366602	|	155	|	species	|
+190650	|	366602	|	no rank	|
+1239	|	2	|	phylum	|
+91061	|	1239	|	class	|
+1385	|	91061	|	order	|
+186817	|	1385	|	family	|
+1386	|	186817	|	genus	|
+1423	|	1386	|	species	|
+224308	|	1423	|	no rank	|
+90964	|	1385	|	family	|
+1279	|	90964	|	genus	|
+1280	|	1279	|	species	|
+46170	|	1280	|	subspecies	|
+93061	|	46170	|	no rank	|
+186801	|	1239	|	class	|
+186802	|	186801	|	order	|
+186806	|	186802	|	family	|
+1870884	|	186806	|	genus	|
+1496	|	1870884	|	species	|
+272563	|	1496	|	no rank	|
+31979	|	186802	|	family	|
+1485	|	31979	|	genus	|
+1488	|	1485	|	species	|
+272562	|	1488	|	no rank	|
+201174	|	2	|	phylum	|
+1760	|	201174	|	class	|
+85011	|	1760	|	order	|
+2062	|	85011	|	family	|
+1883	|	2062	|	genus	|
+1902	|	1883	|	species	|
+100226	|	1902	|	no rank	|
+85007	|	1760	|	order	|
+1762	|	85007	|	family	|
+1763	|	1762	|	genus	|
+1773	|	1763	|	species	|
+83332	|	1773	|	no rank	|
+1798711	|	2	|	phylum	|
+1117	|	1798711	|	class	|
+1161	|	1117	|	order	|
+1164	|	1161	|	family	|
+1163	|	1164	|	genus	|
+103690	|	1163	|	species	|
+35823	|	1117	|	order	|
+1148	|	35823	|	genus	|
+1142	|	1148	|	species	|
+1111708	|	1142	|	no rank	|
+1297	|	2	|	phylum	|
+188786	|	1297	|	class	|
+68933	|	188786	|	order	|
+188787	|	68933	|	family	|
+270	|	188787	|	genus	|
+274	|	270	|	species	|
+300852	|	274	|	no rank	|
+118964	|	188786	|	order	|
+183710	|	118964	|	family	|
+1298	|	183710	|	genus	|
+1299	|	1298	|	species	|
+243230	|	1299	|	no rank	|
+203682	|	2	|	phylum	|
+203683	|	203682	|	class	|
+2607577	|	203683	|	order	|
+59646	|	2607577	|	family	|
+265525	|	59646	|	genus	|
+265606	|	265525	|	species	|
+243090	|	265606	|	no rank	|
+200783	|	2	|	phylum	|
+29547	|	200783	|	class	|
+213849	|	29547	|	order	|
+72294	|	213849	|	family	|
+194	|	72294	|	genus	|
+197	|	194	|	species	|
+192222	|	197	|	no rank	|
+200795	|	2	|	phylum	|
+32066	|	200795	|	class	|
+85115	|	32066	|	order	|
+85117	|	85115	|	family	|
+66976	|	85117	|	genus	|
+66977	|	66976	|	species	|
+224324	|	66977	|	no rank	|
+28890	|	2157	|	phylum	|
+224756	|	28890	|	class	|
+94695	|	224756	|	order	|
+2206	|	94695	|	family	|
+2209	|	2206	|	genus	|
+2214	|	2209	|	species	|
+188937	|	2214	|	no rank	|
+183963	|	28890	|	class	|
+2235	|	183963	|	order	|
+2236	|	2235	|	family	|
+2238	|	2236	|	genus	|
+2239	|	2238	|	species	|
+64091	|	2239	|	no rank	|
+28889	|	2157	|	phylum	|
+183924	|	28889	|	class	|
+2280	|	183924	|	order	|
+118883	|	2280	|	family	|
+2281	|	118883	|	genus	|
+2287	|	2281	|	species	|
+273057	|	2287	|	no rank	|
+33154	|	2759	|	clade	|
+33208	|	33154	|	kingdom	|
+6072	|	33208	|	no rank	|
+33213	|	6072	|	clade	|
+33511	|	33213	|	clade	|
+7711	|	33511	|	phylum	|
+89593	|	7711	|	subphylum	|
+7742	|	89593	|	no rank	|
+7776	|	7742	|	clade	|
+117570	|	7776	|	clade	|
+117571	|	117570	|	clade	|
+8287	|	117571	|	clade	|
+32523	|	8287	|	no rank	|
+32524	|	32523	|	no rank	|
+40674	|	32524	|	class	|
+32525	|	40674	|	no rank	|
+9347	|	32525	|	no rank	|
+314146	|	9347	|	superorder	|
+9443	|	314146	|	order	|
+376913	|	9443	|	suborder	|
+314293	|	376913	|	infraorder	|
+9526	|	314293	|	parvorder	|
+314295	|	9526	|	superfamily	|
+9604	|	314295	|	family	|
+9605	|	9604	|	genus	|
+9606	|	9605	|	species	|
+4751	|	33154	|	kingdom	|
+451864	|	4751	|	subkingdom	|
+4890	|	451864	|	phylum	|
+716545	|	4890	|	subphylum	|
+147537	|	716545	|	class	|
+4892	|	147537	|	order	|
+4893	|	4892	|	family	|
+4930	|	4893	|	genus	|
+4932	|	4930	|	species	|
+559292	|	4932	|	no rank	|
+33090	|	2759	|	kingdom	|
+35493	|	33090	|	phylum	|
+3398	|	35493	|	class	|
+3699	|	3398	|	order	|
+3700	|	3699	|	family	|
+3701	|	3700	|	genus	|
+3702	|	3701	|	species	|
