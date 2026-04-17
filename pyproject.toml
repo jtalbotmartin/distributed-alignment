@@ -24,6 +24,10 @@ dependencies = [
 ray = [
     "ray[default]>=2.9",
 ]
+embeddings = [
+    "fair-esm>=2.0",
+    "torch>=2.0",
+]
 
 [project.scripts]
 distributed-alignment = "distributed_alignment.cli:app"

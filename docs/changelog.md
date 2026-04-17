@@ -862,3 +862,37 @@ Files created:
 - Gitignore patterns without a leading `/` match at any directory depth. This is a recurring trap when project-specific output directories share names with source packages.
 
 **Status**: Complete
+
+---
+
+### Task 3.4: ESM-2 embedding integration (Stream C) — 2026-04-17
+
+**What was done**: Added ESM-2 protein language model embeddings as an optional third feature stream, cleanly separated into a loader module (no torch dependency) and a standalone compute script (requires torch + fair-esm).
+
+Files created:
+- `src/distributed_alignment/features/embedding_features.py` — Loader module: `EMBEDDING_SCHEMA` (PyArrow schema with `pa.list_(pa.float32(), 320)` fixed-size list), `EMBEDDING_DIM = 320`, `MODEL_NAME = "esm2_t6_8M_UR50D"`, `load_embeddings()` that reads and validates a pre-computed Parquet. **No torch or esm imports** — pure PyArrow, importable in the default environment.
+- `scripts/compute_embeddings.py` — Standalone Typer CLI: reads FASTA via the project's existing parser, loads ESM-2 (`esm2_t6_8M_UR50D`, 8M params, 6 layers), processes in batches, mean-pools final-layer representations over residue positions (excluding BOS/EOS), writes Parquet conforming to `EMBEDDING_SCHEMA`. Guarded `import torch / esm` with a clear error message pointing to `uv sync --extra embeddings`. Handles truncation (>1022 residues), empty FASTA, and short sequences.
+- `tests/fixtures/query_embeddings.parquet` — Pre-computed embeddings for all 500 Tier 1 query sequences (~600KB). Committed to the repo so downstream tests have real embeddings.
+- `tests/test_embedding_features.py` — 13 tests: 6 loader unit tests (always run), 4 fixture validation tests (skip if fixture absent), 3 compute integration tests (skip if torch/esm unavailable — determinism, batch boundary, schema).
+- Updated `src/distributed_alignment/features/__init__.py` — exports `load_embeddings`, `EMBEDDING_SCHEMA`, `EMBEDDING_DIM`.
+- Updated `pyproject.toml` — added `embeddings = ["fair-esm>=2.0", "torch>=2.0"]` optional dependency group.
+- Updated `Makefile` — added `compute-embeddings` target for fixture regeneration.
+
+**Decisions made**:
+- `esm2_t6_8M_UR50D` — the smallest ESM-2 variant (8M parameters, 320-dim, 6 layers). Fast enough for CPU on 500 sequences (~4 minutes), small model download (~30MB). Larger variants (35M/150M/650M) would give better representations but the fixture generation time and model size don't justify it for a portfolio project.
+- Mean-pooling over residue positions for sequence-level embeddings, rather than CLS token. This is the ESM documentation's recommendation for sequence-level tasks — the CLS token in ESM-2 doesn't have the same trained-for-classification semantics as in BERT. Mean-pooling averages all residue representations, giving a more stable signal.
+- Clean separation: the loader module has zero torch dependency. This means importing `distributed_alignment.features` never triggers a torch import. The compute script is a standalone entry point that users opt into by installing the `embeddings` extra. This avoids the common antipattern of optional dependencies that break imports.
+- Fixture committed to repo. 500 sequences × 320 floats × 4 bytes = ~640KB compressed — small enough to commit. This means all loader tests and Task 3.5 tests work without torch installed.
+- Sequences >1022 residues are truncated with a warning log. ESM-2's context window is 1024 tokens (including BOS/EOS = 1022 residues). 16 of the 500 Tier 1 sequences hit this limit. Truncation loses C-terminal information but is the standard approach — the alternative (sliding window + pooling) adds complexity for marginal gain.
+
+**Problems encountered**:
+- `pytest.importorskip("torch")` at module level skips the **entire** test file, not just the class below it. Restructured to use a try/except at module level setting `_has_esm = True/False`, then `@pytest.mark.skipif(not _has_esm, ...)` on the integration test class.
+- Torch emits a `UserWarning: Failed to initialize NumPy` on import because numpy isn't in the default environment. Harmless — ESM-2 doesn't need numpy for inference. Shows as a pytest warning but doesn't affect results.
+- Typer CLI arguments using `typer.Option(...)` as default values triggers ruff B008 ("Do not perform function call in argument defaults"). Fixed by using the `Annotated[type, typer.Option(...)]` pattern, matching the main project CLI.
+
+**Learnings**:
+- ESM-2 in eval mode on CPU is deterministic without needing an explicit `torch.manual_seed()`. Two runs on identical input produce bitwise-identical float32 embeddings. This is because the model has no dropout or stochastic layers active in eval mode.
+- The fixture took ~4 minutes for 500 sequences on CPU. Batch processing time varies significantly by sequence length — batches with long sequences (>500 residues) take 20+ seconds, while short-sequence batches take 4-5 seconds.
+- `pa.FixedSizeListArray.from_arrays()` takes a flat array — same pattern as k-mer features. For N sequences × 320 dims, pass a flat array of N×320 floats with `list_size=320`.
+
+**Status**: Complete

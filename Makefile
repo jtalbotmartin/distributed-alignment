@@ -4,7 +4,7 @@
 PYTHONPATH := src
 export PYTHONPATH
 
-.PHONY: help setup test test-integration test-all test-docker docker-build lint cli
+.PHONY: help setup test test-integration test-all test-docker docker-build lint cli compute-embeddings
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -45,3 +45,9 @@ run: ## Run alignment pipeline
 
 status: ## Show pipeline status
 	uv run python -m distributed_alignment status $(ARGS)
+
+compute-embeddings: ## Compute ESM-2 embeddings for Tier 1 fixtures
+	uv run --extra embeddings python scripts/compute_embeddings.py \
+		--fasta tests/fixtures/metagenome_queries.fasta \
+		--output tests/fixtures/query_embeddings.parquet \
+		--run-id fixture-tier1
