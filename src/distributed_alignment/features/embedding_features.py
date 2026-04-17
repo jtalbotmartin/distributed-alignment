@@ -21,8 +21,11 @@ logger = structlog.get_logger(__name__)
 
 # -- Constants ---------------------------------------------------------------
 
-EMBEDDING_DIM: int = 320
-"""Dimensionality of ESM-2 (esm2_t6_8M_UR50D) mean-pooled embeddings."""
+ESM_HIDDEN_DIM: int = 320
+"""Hidden dimensionality of ESM-2 (esm2_t6_8M_UR50D) per-residue representations."""
+
+EMBEDDING_DIM: int = ESM_HIDDEN_DIM * 3  # 960
+"""Dimensionality of the multi-scale pooled embedding (mean + max + std)."""
 
 MODEL_NAME: str = "esm2_t6_8M_UR50D"
 """ESM-2 model variant used for embedding computation."""

@@ -135,7 +135,7 @@ class TestLoadFixtureEmbeddings:
     def test_embedding_dim(self) -> None:
         table = load_embeddings(FIXTURE_EMBEDDINGS)
         vec = table.column("embedding")[0].as_py()
-        assert len(vec) == 320
+        assert len(vec) == EMBEDDING_DIM
 
     def test_sequence_ids_match_fasta(self) -> None:
         table = load_embeddings(FIXTURE_EMBEDDINGS)
@@ -242,7 +242,7 @@ class TestComputeEmbeddings:
         assert table.num_rows == 3
         assert table.schema.equals(EMBEDDING_SCHEMA)
         vec = table.column("embedding")[0].as_py()
-        assert len(vec) == 320
+        assert len(vec) == EMBEDDING_DIM
 
     def test_compute_deterministic(self, tmp_path: Path) -> None:
         """Two runs produce identical embeddings."""

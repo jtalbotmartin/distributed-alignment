@@ -638,3 +638,28 @@ Download scripts and fixtures for the tiered dataset strategy. See the separate 
 - Determinism
 
 ---
+
+### Task 3.4: ESM-2 embedding integration (Stream B, optional)
+
+**What**: Compute or load protein language model embeddings as a richer alternative to k-mer features.
+
+**Key behaviours**:
+- `scripts/compute_embeddings.py` — takes a FASTA file, runs ESM-2 (esm2_t6_8M_UR50D, 320-dim), writes embeddings as Parquet
+- `load_embeddings(parquet_path)` → reads the embedding Parquet
+- The compute script batches sequences (batch size ~32) to manage memory
+- Pre-compute embeddings for Tier 1 test fixtures and commit as `tests/fixtures/query_embeddings.parquet`
+- For Tier 2 real metagenome: compute script runs as a setup step, saves to `data/embeddings/`
+- `fair-esm` and `torch` are optional dependencies: `[project.optional-dependencies] embeddings = ["fair-esm", "torch"]`
+- The embedding loader works without torch — it just reads Parquet
+
+**Files**:
+- `src/distributed_alignment/features/embedding_features.py` (loader only — no torch dependency)
+- `scripts/compute_embeddings.py` (requires torch + fair-esm)
+- `tests/test_embedding_features.py`
+- `tests/fixtures/query_embeddings.parquet` (pre-computed for Tier 1 data)
+
+**Tests**:
+- Load embeddings from fixture → correct shape
+- Merge with other features on sequence_id
+- Missing embeddings for some sequences → null values (not dropped)
+- compute_embeddings.py: only test if torch is available (@pytest.mark.integration)

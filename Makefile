@@ -46,8 +46,12 @@ run: ## Run alignment pipeline
 status: ## Show pipeline status
 	uv run python -m distributed_alignment status $(ARGS)
 
-compute-embeddings: ## Compute ESM-2 embeddings for Tier 1 fixtures
+EMBED_FASTA ?= tests/fixtures/metagenome_queries.fasta
+EMBED_OUTPUT ?= tests/fixtures/query_embeddings.parquet
+EMBED_RUN_ID ?= fixture-tier1
+
+compute-embeddings: ## Compute ESM-2 embeddings (override with EMBED_FASTA=... EMBED_OUTPUT=...)
 	uv run --extra embeddings python scripts/compute_embeddings.py \
-		--fasta tests/fixtures/metagenome_queries.fasta \
-		--output tests/fixtures/query_embeddings.parquet \
-		--run-id fixture-tier1
+		--fasta $(EMBED_FASTA) \
+		--output $(EMBED_OUTPUT) \
+		--run-id $(EMBED_RUN_ID)
