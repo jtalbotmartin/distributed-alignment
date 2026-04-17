@@ -220,6 +220,7 @@ def _wait_for(
     stack: FileSystemWorkStack,
     *,
     completed: int | None = None,
+    running: int | None = None,
     timeout: float = 30.0,
 ) -> None:
     """Poll until the expected state is reached or timeout."""
@@ -227,6 +228,8 @@ def _wait_for(
     while time.monotonic() < deadline:
         s = stack.status()
         if completed is not None and s.get("COMPLETED", 0) >= completed:
+            return
+        if running is not None and s.get("RUNNING", 0) >= running:
             return
         time.sleep(0.2)
     s = stack.status()
@@ -260,9 +263,8 @@ class TestWorkerSIGKILLDuringAlignment:
             p.start()
             procs.append(p)
 
-        # Wait for packages to enter running
-        time.sleep(1.0)
-        assert stack.status()["RUNNING"] >= 1
+        # Wait for at least one package to be claimed
+        _wait_for(stack, running=1, timeout=10.0)
 
         # Kill one worker
         os.kill(procs[0].pid, signal.SIGKILL)
@@ -586,9 +588,8 @@ class TestAllWorkersDieThenRestart:
             p.start()
             procs.append(p)
 
-        # Let them claim packages
-        time.sleep(1.0)
-        assert stack.status()["RUNNING"] >= 1
+        # Wait for at least one package to be claimed
+        _wait_for(stack, running=1, timeout=10.0)
 
         # Kill ALL workers
         for p in procs:

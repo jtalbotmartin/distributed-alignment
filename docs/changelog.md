@@ -836,3 +836,29 @@ Files created:
 - LEFT JOIN against a master query list is essential for producing a complete feature table. Without it, queries with no alignment hits would be silently dropped, creating a biased feature matrix.
 
 **Status**: Complete
+
+---
+
+### Task 3.3: k-mer frequency features (Stream B) — 2026-04-17
+
+**What was done**: Built the k-mer feature extractor that computes 8,000-dimensional amino-acid 3-mer frequency vectors for every query sequence.
+
+Files created:
+- `src/distributed_alignment/features/kmer_features.py` — Module-level constants: `AMINO_ACIDS` (20 standard), `KMER_VOCABULARY` (8,000 3-mers via `itertools.product`, stable ordering), `KMER_SCHEMA` (PyArrow schema with `pa.list_(pa.float32(), 8000)` fixed-size list). Core function `_kmer_frequencies()` does overlapping 3-mer counting with non-standard residue filtering and frequency normalisation. Public function `extract_kmer_features()` reads all query chunks, computes per-sequence vectors, and writes Parquet with metadata columns.
+- `tests/test_kmer_features.py` — 21 tests across 7 classes: vocabulary (length, first/last, character set), hand-verified counts (AAAA, ACACACAC, AAACCC with exact frequency assertions), summation invariant (4 parametrised sequences), edge cases (too short, empty, non-standard residues, all non-standard, lowercase), schema/metadata, multi-chunk integration, determinism.
+- Updated `src/distributed_alignment/features/__init__.py` — exports `extract_kmer_features`, `KMER_SCHEMA`, `KMER_VOCABULARY`.
+
+**Decisions made**:
+- Fixed-size list column (`pa.list_(pa.float32(), 8000)`) rather than 8,000 individual float columns. More compact in Parquet, easier to slice in downstream code, and matches how ML libraries expect dense feature vectors. The alternative (one column per k-mer) would make the schema unwieldy and slow to read column-by-column.
+- `float32` rather than `float64` — frequencies are small numbers (count/total) that don't need double precision. Halves the storage for the 8,000-element vectors. This is standard practice for ML feature matrices.
+- Non-standard residue handling: skip any 3-mer containing a character outside the 20 standard amino acids. Don't count it toward the denominator. This means a sequence like `AAAXAAA` produces a clean vector for the valid portions rather than injecting noise. Sequences with zero valid 3-mers get an all-zero vector (no error).
+- `KMER_VOCABULARY` built via `itertools.product(AMINO_ACIDS, repeat=3)` with alphabetically ordered amino acids. This gives a deterministic, stable ordering that tests depend on. Module-level constant, computed once at import time.
+
+**Problems encountered**:
+- `.gitignore` had `features/` (unanchored) which matched `src/distributed_alignment/features/` — silently preventing git from tracking the features source code. Fixed by changing to `/features/` (anchored to repo root). Debugged with `git check-ignore -v <path>`.
+
+**Learnings**:
+- PyArrow's `FixedSizeListArray.from_arrays()` takes a flat array of all values plus a `list_size` parameter. So for N sequences × 8,000 elements, you pass a flat array of N×8,000 floats. The flat-then-reshape pattern: `[v for vec in freq_vectors for v in vec]`.
+- Gitignore patterns without a leading `/` match at any directory depth. This is a recurring trap when project-specific output directories share names with source packages.
+
+**Status**: Complete

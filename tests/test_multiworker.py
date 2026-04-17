@@ -348,9 +348,13 @@ class TestMultiprocessWorkerDeath:
             args=(str(work_dir),),
         )
         slow_proc.start()
-        time.sleep(0.3)  # Let it claim
 
-        # Verify it claimed something
+        # Poll until the subprocess has claimed a package
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            if stack.status().get("RUNNING", 0) >= 1:
+                break
+            time.sleep(0.1)
         assert stack.status()["RUNNING"] >= 1
 
         # Kill the slow worker

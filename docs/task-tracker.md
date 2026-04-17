@@ -613,3 +613,28 @@ Download scripts and fixtures for the tiered dataset strategy. See the separate 
 - Determinism: same input → same output
 
 ---
+
+### Task 3.3: k-mer frequency features (always available)
+
+**What**: Compute k-mer (amino acid triplet) frequency vectors for each query sequence. This runs at pipeline time with zero additional dependencies and provides a lightweight protein representation.
+
+**Why k-mers**: 3-mer frequencies capture amino acid composition patterns — proteins with similar functions tend to have similar amino acid usage. It's not as rich as a learned representation (ESM-2) but it's computationally trivial, requires no model downloads, and is surprisingly effective for clustering related proteins.
+
+**Key behaviours**:
+- For each query sequence, count all 3-mers (there are 20³ = 8,000 possible triplets of standard amino acids)
+- Normalise to frequencies (divide by total 3-mer count)
+- Output as a Parquet file: sequence_id + 8,000-dimensional frequency vector
+- The vector can be stored as a fixed-size list<float32> in Parquet, or as individual columns (kmer_AAA, kmer_AAC, ...) — list is more compact
+
+**Files**:
+- `src/distributed_alignment/features/kmer_features.py`
+- `tests/test_kmer_features.py`
+
+**Tests**:
+- Known sequence → correct 3-mer counts (hand-verify a short sequence)
+- Frequencies sum to ~1.0 (within floating point tolerance)
+- Sequence shorter than 3 amino acids → zeros (or skip with warning)
+- Output shape: N sequences × 8,000 dimensions
+- Determinism
+
+---

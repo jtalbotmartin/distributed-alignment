@@ -81,7 +81,7 @@ def extract_alignment_features(
     output_path: Path,
     *,
     run_id: str = "",
-    feature_version: str = "1.0",
+    feature_version: str = "v1",
 ) -> Path:
     """Compute per-query alignment features from enriched results.
 
