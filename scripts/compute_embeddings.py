@@ -2,8 +2,7 @@
 """Compute ESM-2 embeddings for protein sequences.
 
 Reads a FASTA file, runs the ESM-2 language model in batches, and
-writes multi-scale pooled embeddings (mean + max + std, 960-dim)
-to Parquet.
+writes mean-pooled embeddings (320-dim) to Parquet.
 
 Requires the ``embeddings`` optional extra::
 
@@ -16,9 +15,9 @@ Regenerate the Tier 1 fixture::
         --output tests/fixtures/query_embeddings.parquet \\
         --run-id fixture-tier1
 
-Uses ``esm2_t6_8M_UR50D`` (8M parameters, 320-dim per-residue,
-960-dim after multi-scale pooling, 6 transformer layers).  Fast
-enough for CPU; uses CUDA when available.
+Uses ``esm2_t6_8M_UR50D`` (8M parameters, 320-dim embeddings,
+6 transformer layers).  Fast enough for CPU; uses CUDA when
+available.
 """
 
 from __future__ import annotations
@@ -45,7 +44,6 @@ import typer
 from distributed_alignment.features.embedding_features import (
     EMBEDDING_DIM,
     EMBEDDING_SCHEMA,
-    ESM_HIDDEN_DIM,
     MODEL_NAME,
 )
 from distributed_alignment.ingest.fasta_parser import parse_fasta
@@ -118,8 +116,8 @@ def _compute_embeddings(
         representations = results["representations"][model.num_layers]  # (B, L, 320)
 
         for i, (sid, seq) in enumerate(processed):
-            # Multi-scale pooling over residue positions,
-            # excluding BOS (position 0) and EOS/padding.
+            # Mean-pool over residue positions, excluding
+            # BOS (position 0) and EOS/padding.
             seq_len = len(seq)
             # Positions 1..seq_len are the residue tokens
             token_repr = representations[
@@ -134,17 +132,8 @@ def _compute_embeddings(
                 )
                 embedding = [0.0] * EMBEDDING_DIM
             else:
-                mean_pool = token_repr.mean(dim=0)
-                max_pool = token_repr.max(dim=0).values
-                std_pool = (
-                    token_repr.std(dim=0)
-                    if token_repr.shape[0] > 1
-                    else torch.zeros(ESM_HIDDEN_DIM)
-                )
                 embedding = (
-                    torch.cat([mean_pool, max_pool, std_pool])
-                    .cpu()
-                    .tolist()
+                    token_repr.mean(dim=0).cpu().tolist()
                 )
 
             all_ids.append(sid)

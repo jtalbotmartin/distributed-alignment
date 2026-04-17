@@ -893,8 +893,8 @@ Files created:
 **Learnings**:
 - ESM-2 in eval mode on CPU is deterministic without needing an explicit `torch.manual_seed()`. Two runs on identical input produce bitwise-identical float32 embeddings. This is because the model has no dropout or stochastic layers active in eval mode.
 - The fixture took ~4 minutes for 500 sequences on CPU. Batch processing time varies significantly by sequence length — batches with long sequences (>500 residues) take 20+ seconds, while short-sequence batches take 4-5 seconds.
-- `pa.FixedSizeListArray.from_arrays()` takes a flat array — same pattern as k-mer features. For N sequences × 960 dims, pass a flat array of N×960 floats with `list_size=960`.
-
-**Update — multi-scale pooling**: Changed from mean-only (320-dim) to multi-scale pooling: mean + max + std concatenated (960-dim). The mean component captures average protein character, the max captures the strongest signal at any position (useful for functional motifs), and the std captures structural complexity (multi-domain vs single-domain). `EMBEDDING_DIM` is now 960; `ESM_HIDDEN_DIM` (320) is the per-residue hidden size. Determinism confirmed — std pooling with a single-residue fallback to zeros. Fixture regenerated (~3 min on CPU). Makefile `compute-embeddings` target now accepts `EMBED_FASTA`, `EMBED_OUTPUT`, `EMBED_RUN_ID` variables with Tier 1 defaults.
+- `pa.FixedSizeListArray.from_arrays()` takes a flat array — same pattern as k-mer features. For N sequences × 320 dims, pass a flat array of N×320 floats with `list_size=320`.
+- Briefly implemented multi-scale pooling (mean + max + std, 960-dim) but reverted to mean-only (320-dim) for consistency with ESM-2 documentation. Mean-pooling is the canonical choice for sequence-level tasks with ESM-2; a custom pooling scheme is harder to defend than "I followed the model authors' recommendation." If richer representations are needed, the principled approach is to use a larger ESM-2 variant (e.g. `esm2_t12_35M_UR50D`, 480-dim) rather than inventing a pooling strategy.
+- Makefile `compute-embeddings` target accepts `EMBED_FASTA`, `EMBED_OUTPUT`, `EMBED_RUN_ID` variables with Tier 1 defaults, so it's usable for arbitrary FASTA inputs.
 
 **Status**: Complete
