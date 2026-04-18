@@ -687,3 +687,28 @@ Download scripts and fixtures for the tiered dataset strategy. See the separate 
 - Combine without embeddings → alignment + k-mer features, embedding null
 - Schema version embedded in output
 - Feature determinism
+
+---
+
+### Task 3.6: Data catalogue
+
+**What**: DuckDB metadata store tracking datasets, lineage, and pipeline runs.
+
+**Key behaviours**:
+- DuckDB file (catalogue.duckdb) with tables: datasets, lineage, runs
+- register_dataset(), register_lineage(), register_run()
+- get_lineage() → recursive query returning full ancestry
+- Pipeline stages register their outputs with the catalogue
+
+**Files**:
+- `src/distributed_alignment/catalogue/__init__.py`
+- `src/distributed_alignment/catalogue/store.py`
+- `tests/test_catalogue.py`
+
+**Tests**:
+- Register and retrieve datasets
+- Lineage: A → B → C, query C → returns B and A
+- Duplicate registration → update, not error
+- Register run with config and metrics
+
+---

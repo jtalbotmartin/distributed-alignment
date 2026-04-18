@@ -925,3 +925,32 @@ Files created:
 - ID agreement validation before a join is cheap and catches data quality bugs that would otherwise silently drop rows. The cost of the set comparison is negligible compared to the IO of reading the Parquet files.
 
 **Status**: Complete
+
+---
+
+### Task 3.6: Data catalogue — 2026-04-18
+
+**What was done**: Built the metadata store that will track pipeline outputs when 3.7 wires everything together. A DuckDB-backed catalogue with three tables (datasets, lineage, runs) and a recursive CTE for ancestry/descendant queries.
+
+Files created:
+- `src/distributed_alignment/catalogue/store.py` — `CatalogueStore` class that mirrors the `TaxonomyDB` pattern: owns a DuckDB connection, encapsulates all SQL, exposes domain-level methods. Three tables with the schemas from the TDD plus `git_commit` on runs. Recursive CTE for lineage walks in both directions. JSON columns for `parameters`, `config`, `metrics` with dict round-trip. Context manager support.
+- `src/distributed_alignment/catalogue/__init__.py` — exports `CatalogueStore`.
+- `tests/test_catalogue.py` — 27 tests across 5 classes: initialisation (tables created, data persists across reopen, context manager, idempotent close, parent dirs), datasets (register+get, minimal/full fields, upsert, filters, null `created_by_run` for reference data), runs (status transitions, `complete_run`/`fail_run`, JSON round-trip, `git_commit` optional, filter by status), lineage (simple edges, chains, branching, descendants, `max_depth` cap, upsert), and FK-ish behaviour (edges referencing unknown datasets are allowed).
+
+**Decisions made**:
+- Upsert semantics for all three `register_*` methods, using DuckDB's `INSERT ... ON CONFLICT ... DO UPDATE`. Re-running a pipeline stage re-registers its outputs; raising on conflict would force callers to handle "does this already exist?" logic that belongs in the store. `register_run` specifically only updates `started_at`/`config`/`git_commit` on conflict — `completed_at`/`status`/`metrics` are managed by `complete_run`/`fail_run`.
+- Lineage edges may reference unregistered datasets. Pipeline stages often register edges before both datasets are committed; enforcing referential integrity would make the calling code rigid. The catalogue is a thin recorder; 3.7 handles ordering via its own conventions. An explicit test documents this as intentional rather than a bug.
+- Added `git_commit` as a column on runs even though it's not in the TDD. One-line bridge between "which pipeline run produced this?" (lineage) and "which code produced this?" (git). Caller provides it; the catalogue doesn't auto-detect (that would couple it to a git working tree).
+- Stored timestamps as naive UTC `TIMESTAMP` rather than `TIMESTAMP WITH TIME ZONE`. DuckDB's aware-timestamp binding requires `pytz` which isn't a project dependency. Convert to naive UTC on insert, document the convention. Consistent with `alignment_features.py`'s schema.
+- Used `json.dumps(..., default=str)` for JSON columns. Non-JSON-serialisable values (datetimes, Paths) survive as their string form. The catalogue is for inspection, not precise round-tripping — this tradeoff favours robustness.
+
+**Problems encountered**:
+- DuckDB's `TIMESTAMP WITH TIME ZONE` column type requires `pytz` at read time: `InvalidInputException: Required module 'pytz' failed to import`. Initial implementation used tz-aware timestamps and failed 14 of 27 tests. Switched to naive `TIMESTAMP` with a `_to_naive_utc()` helper on insert.
+- The `B017` ruff rule flagged `with pytest.raises(Exception):` in the context-manager test. Switched to `pytest.raises((AttributeError, AssertionError))` — more specific, and actually correct given the `assert self._conn is not None` guards in the store methods.
+
+**Learnings**:
+- DuckDB recursive CTEs work cleanly for lineage. The `WITH RECURSIVE walk(...) AS (anchor UNION ALL recursive-step) SELECT...` pattern with a `depth < max_depth` guard is concise and efficient. The same template covers both ancestors (join on `child = walk.dataset`) and descendants (join on `parent = walk.dataset`) — only the column names swap.
+- The "single-writer, multi-reader" model for DuckDB is the right shape for a pipeline metadata store. The catalogue is written by the orchestrator and read by everyone else; trying to make it thread-safe at the object level would add complexity without value.
+- Deferred FK enforcement is a judgement call with a real tradeoff: you get flexibility at registration time but lose catch-at-write integrity. The right answer depends on who owns ordering. For this project, the pipeline driver (3.7) owns ordering, so the catalogue can be permissive. A future `validate()` method could flag orphan edges without changing the write path.
+
+**Status**: Complete
