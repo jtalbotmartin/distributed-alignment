@@ -898,3 +898,30 @@ Files created:
 - Makefile `compute-embeddings` target accepts `EMBED_FASTA`, `EMBED_OUTPUT`, `EMBED_RUN_ID` variables with Tier 1 defaults, so it's usable for arbitrary FASTA inputs.
 
 **Status**: Complete
+
+---
+
+### Task 3.5: Feature combiner and schema versioning — 2026-04-18
+
+**What was done**: Built the feature combiner that joins alignment features, k-mer frequencies, and optional ESM-2 embeddings into a single versioned feature table.
+
+Files created:
+- `src/distributed_alignment/features/combiner.py` — `combine_features()` joins alignment + k-mer (inner join, validated ID agreement) and optionally left-joins ESM-2 embeddings. Two module-level schemas: `COMBINED_SCHEMA` (with embeddings) and `COMBINED_SCHEMA_NO_EMBEDDINGS` (without). When embeddings aren't provided, the `esm2_embedding` column is absent from the output — distinguishable by schema alone. Per-stream metadata columns (feature_version, run_id, created_at) are dropped from inputs; the combined table has its own.
+- `tests/test_combiner.py` — 16 tests across 5 classes: core joins (no embeddings, with embeddings, row count, zero-hit preservation), schema/metadata (both schemas, version/run_id propagation, UTC timestamp, no duplicate metadata), edge cases (partial embeddings, extra sequences dropped, ID mismatch ValueError, empty inputs, missing file), determinism.
+- Updated `src/distributed_alignment/features/__init__.py` — exports `combine_features`, `COMBINED_SCHEMA`, `COMBINED_SCHEMA_NO_EMBEDDINGS`.
+
+**Decisions made**:
+- Inner join for alignment + k-mer (they must agree — same chunks produced both). A mismatch is surfaced as a `ValueError` with counts and up to 5 example mismatched IDs, rather than silently dropping rows. Left join for embeddings (optional — sequences without embeddings get null, extra embeddings are dropped).
+- When embeddings are not provided, the `esm2_embedding` column is absent from the output (not present with all nulls). This keeps the two schemas cleanly distinguishable and avoids downstream code needing to check for an all-null column.
+- Variable-size `pa.list_(pa.float32())` for the embedding column in the combined table instead of fixed-size `pa.list_(pa.float32(), 320)`. Fixed-size lists with null entries don't survive Parquet round-trips in the current PyArrow version — nulls are written as size-0 entries instead of proper Arrow nulls, causing `ArrowInvalid` on read. The dimensionality is already validated at `load_embeddings()` time; the combined table just needs nullable list storage.
+- DuckDB for the alignment+kmer join (consistent with the rest of the codebase). The embedding left-join is done in Python/PyArrow because DuckDB has the same fixed-size-list null issue.
+
+**Problems encountered**:
+- PyArrow/Parquet fixed-size list null round-trip bug: `pa.list_(pa.float32(), 320)` columns with null entries are written to Parquet with size-0 entries instead of proper nulls. Reading them back fails with `ArrowInvalid: Expected all lists to be of size=320 but index N had size=0`. Tried three approaches (DuckDB LEFT JOIN, `pa.array()` with None, `pa.Array.from_buffers()` with validity bitmap) — all produced the same corrupted Parquet. Fixed by using variable-size `pa.list_(pa.float32())` which handles nulls correctly.
+- The `FeatureRow` Pydantic model in `models.py` exists but is stale — it has alignment features + metadata but no k-mer or embedding fields. Left it as-is since representing 8,000-dim and 320-dim list fields in Pydantic is awkward, and PyArrow schema validation is doing the real work.
+
+**Learnings**:
+- Parquet's handling of nested types (lists, fixed-size lists, structs) with nulls is a known pain point. The Parquet format doesn't have a native fixed-size list type — Arrow maps it using metadata. When nulls are involved, the write/read roundtrip can break. The pragmatic workaround: use variable-size lists in storage, validate dimensions in application code.
+- ID agreement validation before a join is cheap and catches data quality bugs that would otherwise silently drop rows. The cost of the set comparison is negligible compared to the IO of reading the Parquet files.
+
+**Status**: Complete

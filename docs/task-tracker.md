@@ -663,3 +663,27 @@ Download scripts and fixtures for the tiered dataset strategy. See the separate 
 - Merge with other features on sequence_id
 - Missing embeddings for some sequences → null values (not dropped)
 - compute_embeddings.py: only test if torch is available (@pytest.mark.integration)
+
+---
+
+### Task 3.5: Feature combiner and schema versioning
+
+**What**: Combine alignment features (Stream A), k-mer features, and optionally ESM-2 embeddings into a single versioned feature table.
+
+**Key behaviours**:
+- Join alignment features + k-mer features on sequence_id (always)
+- Left-join ESM-2 embeddings if available (optional)
+- Add metadata: feature_version ("v1"), run_id, created_at
+- Validate against FeatureRow model
+- If embeddings aren't available, embedding column is null
+- Write as versioned Parquet
+
+**Files**:
+- `src/distributed_alignment/features/combiner.py`
+- `tests/test_combiner.py`
+
+**Tests**:
+- Combine all three streams → complete feature table
+- Combine without embeddings → alignment + k-mer features, embedding null
+- Schema version embedded in output
+- Feature determinism
