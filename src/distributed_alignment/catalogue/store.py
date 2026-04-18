@@ -11,6 +11,10 @@ Three tables backed by DuckDB:
 
 The catalogue is single-writer, multi-reader — DuckDB's file lock
 enforces this.  Each writer should open its own :class:`CatalogueStore`.
+
+All timestamps are stored as ``TIMESTAMP WITH TIME ZONE`` (requires the
+``pytz`` dependency at bind time).  Callers should pass tz-aware
+datetimes (typically ``datetime.now(tz=UTC)``).
 """
 
 from __future__ import annotations
@@ -25,21 +29,6 @@ import duckdb
 import structlog
 
 logger = structlog.get_logger(__name__)
-
-
-def _to_naive_utc(dt: datetime) -> datetime:
-    """Convert an aware datetime to naive UTC, or return as-is if naive.
-
-    DuckDB's ``TIMESTAMP`` requires ``pytz`` at read time
-    which isn't a project dependency.  We store everything as naive UTC
-    timestamps and document the convention — simpler and avoids the
-    extra dep.
-    """
-    from datetime import UTC
-
-    if dt.tzinfo is None:
-        return dt
-    return dt.astimezone(UTC).replace(tzinfo=None)
 
 
 def _jsonify(value: dict[str, Any] | None) -> str | None:
@@ -99,7 +88,7 @@ class CatalogueStore:
                 num_rows BIGINT,
                 size_bytes BIGINT,
                 content_checksum TEXT,
-                created_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL,
                 created_by_run TEXT,
                 parameters JSON
             )
@@ -119,8 +108,8 @@ class CatalogueStore:
             """
             CREATE TABLE IF NOT EXISTS runs (
                 run_id TEXT PRIMARY KEY,
-                started_at TIMESTAMP NOT NULL,
-                completed_at TIMESTAMP,
+                started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                completed_at TIMESTAMP WITH TIME ZONE,
                 status TEXT NOT NULL,
                 config JSON,
                 metrics JSON,
@@ -151,7 +140,7 @@ class CatalogueStore:
         """
         from datetime import UTC
 
-        now = _to_naive_utc(datetime.now(tz=UTC))
+        now = datetime.now(tz=UTC)
         assert self._conn is not None
         self._conn.execute(
             """
@@ -268,7 +257,7 @@ class CatalogueStore:
             """,
             [
                 run_id,
-                _to_naive_utc(started_at),
+                started_at,
                 _jsonify(config),
                 git_commit,
             ],
@@ -311,7 +300,7 @@ class CatalogueStore:
             WHERE run_id = ?
             """,
             [
-                _to_naive_utc(completed_at),
+                completed_at,
                 status,
                 _jsonify(metrics),
                 run_id,

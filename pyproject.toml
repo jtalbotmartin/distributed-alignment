@@ -18,6 +18,7 @@ dependencies = [
     "structlog>=24.0",
     "typer>=0.12",
     "prometheus-client>=0.20",
+    "pytz>=2024.1",
 ]
 
 [project.optional-dependencies]
@@ -88,4 +89,7 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "ruff>=0.6",
+    "jupyter>=1.0",
+    "ipykernel>=6.0",
+    "pandas>=2.0",
 ]

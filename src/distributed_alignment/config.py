@@ -78,6 +78,8 @@ class DistributedAlignmentConfig(BaseSettings):
     results_dir: Path = Path("./results")
     features_dir: Path = Path("./features")
     catalogue_path: Path = Path("./catalogue.duckdb")
+    taxonomy_db_path: Path | None = None
+    embeddings_path: Path | None = None
 
     # Observability
     log_level: str = "INFO"

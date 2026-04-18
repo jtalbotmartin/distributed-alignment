@@ -954,3 +954,38 @@ Files created:
 - Deferred FK enforcement is a judgement call with a real tradeoff: you get flexibility at registration time but lose catch-at-write integrity. The right answer depends on who owns ordering. For this project, the pipeline driver (3.7) owns ordering, so the catalogue can be permissive. A future `validate()` method could flag orphan edges without changing the write path.
 
 **Status**: Complete
+
+---
+
+### Task 3.7: Pipeline integration and CLI wiring — 2026-04-18
+
+**What was done**: Chained the Phase 3 components into a single orchestrated pipeline, surfaced it through new flags on the existing `run` CLI command, and added catalogue registration end-to-end. Also closed the timestamp inconsistency flagged in 3.6.
+
+Files created/modified:
+- `src/distributed_alignment/pipeline.py` (new) — `run_feature_pipeline()` pure function, `PipelineResult` dataclass, `RunCollisionError`. Orchestrates merge → enrich (optional) → alignment + k-mer features → embeddings load (optional) → combine. Registers every output and lineage edge in the catalogue with the dataset-then-edge ordering convention. Graceful degradation across the full coverage matrix.
+- `src/distributed_alignment/cli.py` (modified) — added 8 new Phase 3 flags to the `run` command (`--taxonomy-db`, `--embeddings`, `--skip-enrichment`, `--skip-features`, `--feature-version`, `--run-id`, `--git-commit`, `--force-rerun`). The CLI becomes a thin wrapper calling `run_feature_pipeline()`.
+- `src/distributed_alignment/config.py` — added `taxonomy_db_path` and `embeddings_path` fields.
+- `src/distributed_alignment/features/alignment_features.py` — detects missing `phylum`/`kingdom` columns and injects NULL placeholders so the function handles both enriched and non-enriched inputs. Also migrated `created_at` to tz-aware UTC.
+- `src/distributed_alignment/catalogue/store.py` — switched to `TIMESTAMP WITH TIME ZONE`, removed the `_to_naive_utc()` helper, documented the tz-aware convention in the module docstring.
+- `pyproject.toml` — added `pytz>=2024.1` to core deps.
+- `tests/test_integration.py` — 13 new Phase 3 integration tests across 5 classes (coverage matrix, catalogue integration, rerun semantics, failure path, CLI smoke). These run in the default `make test` suite since they don't need DIAMOND.
+
+**Decisions made**:
+- **Timestamp option 1** (add pytz, all-tz-aware). There was a three-way inconsistency — alignment features naive, kmer/embedding tz-aware, catalogue naive. Keeping the catalogue naive would leave Parquet ↔ catalogue columns diverged forever. Adding `pytz` as a core dep is a small cost for a coherent codebase; DuckDB's Python binding specifically wants `pytz` (not `zoneinfo`) at bind time. Every `created_at`, `started_at`, `completed_at` in the project is now `pa.timestamp("us", tz="UTC")` or DuckDB `TIMESTAMP WITH TIME ZONE`.
+- **Extracted to `pipeline.py`** rather than inlining in `cli.py`, contrary to the prompt's "err toward inline" steer. Reasoning: the orchestration is ~180 lines with conditional stage branching, per-stage catalogue registration, and error handling. More importantly, the integration tests are much cleaner when they can call the pipeline function directly with typed kwargs rather than driving it through Typer's `CliRunner`. `cli.py` becomes a ~20-line wrapper that handles flag plumbing. The prompt explicitly invited this decision to be justified.
+- **`--force-rerun` safety check**: added as specified. A run_id collision (existing run that's not "failed") raises `RunCollisionError` unless `--force-rerun` is passed. This catches accidental overwrites — the upsert semantics of `register_run` alone would silently re-register a completed run as "running", which masks actual completion time.
+- **Dataset-then-edge ordering**: for each stage, the pipeline registers the output dataset first, then the lineage edge(s) from parents → child. This matches the 3.6 review's recommendation — if a crash happens mid-registration, you end up with an orphan dataset (recoverable) rather than an orphan edge (confusing). The catalogue is permissive about FK integrity, so this discipline lives in the pipeline driver.
+- **Embeddings as reference dataset**: when `--embeddings` is provided, the embeddings file is registered in the catalogue with `created_by_run=None`. Pre-computed externally, so no producing run to link to. Re-registering the same embeddings across runs is a no-op via upsert.
+- **Non-enriched alignment features**: rather than modify `alignment_features.py`'s SQL to branch on column existence, I inject NULL `phylum`/`kingdom` columns at the boundary when the input lacks them. Minimal change, no new code paths in the SQL, tests that already covered enriched input still pass as-is.
+
+**Problems encountered**:
+- Initial integration tests hit `_duckdb.BinderException: Referenced column "phylum" not found` when running without `--taxonomy-db`. Fix: the NULL-column injection described above.
+- Typer's `Annotated[type, typer.Option(...)]` pattern is necessary for boolean flags to work correctly — using raw `typer.Option()` as a default triggers ruff B008 and produces surprising behaviour for flag defaults.
+- The pipeline initially had `run_id: str` as a positional arg in `cli.py`, colliding with `q_manifest.run_id` from the existing merge flow. Fixed with `effective_run_id = run_id or q_manifest.run_id`.
+
+**Learnings**:
+- Keeping the orchestrator as a pure function with no Typer dependencies was worth the effort. The integration tests read like normal Python and the CLI stays thin enough that its only job is flag translation.
+- The dataset-then-edge registration order matters more than it looks. Without it, a failure mid-registration leaves dangling lineage rows that point to nothing — confusing when debugging. With it, the worst case is a dataset row with no downstream lineage, which is obvious.
+- `PipelineResult` as a dataclass return type gives callers typed access to output paths and metrics without re-reading the catalogue. The CLI uses it for the summary echo; the tests use it for assertions.
+
+**Status**: Complete

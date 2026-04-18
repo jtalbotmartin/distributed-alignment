@@ -32,7 +32,7 @@ FEATURE_SCHEMA = pa.schema(
         pa.field("num_kingdoms", pa.int64()),
         pa.field("feature_version", pa.string()),
         pa.field("run_id", pa.string()),
-        pa.field("created_at", pa.timestamp("us")),
+        pa.field("created_at", pa.timestamp("us", tz="UTC")),
     ]
 )
 
@@ -106,6 +106,20 @@ def extract_alignment_features(
         # -- Load data -------------------------------------------------------
         enriched = _read_parquet_path(enriched_parquet_path)
         all_queries = _read_query_sequences(chunks_dir)
+
+        # Allow non-enriched input (no taxonomy columns): add NULL
+        # columns so the SQL binds. Taxonomic features then come out
+        # as NULL/zero for every query — consistent with the
+        # "taxonomy-less run" case.
+        for col in ("phylum", "kingdom"):
+            if col not in enriched.schema.names:
+                enriched = enriched.append_column(
+                    col,
+                    pa.array(
+                        [None] * enriched.num_rows,
+                        type=pa.string(),
+                    ),
+                )
 
         conn.register("enriched", enriched)
         conn.register("all_queries", all_queries)

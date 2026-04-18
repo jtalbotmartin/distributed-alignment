@@ -712,3 +712,29 @@ Download scripts and fixtures for the tiered dataset strategy. See the separate 
 - Register run with config and metrics
 
 ---
+
+### Task 3.7: Pipeline integration and CLI
+
+**What**: Wire enrichment, features, and catalogue into the pipeline. Update CLI.
+
+**Key behaviours**:
+- After merging, the `run` command:
+  1. Enriches merged results with taxonomy (if taxonomy DB available)
+  2. Extracts alignment features from enriched (or merged) results
+  3. Computes k-mer features from query sequences
+  4. Loads ESM-2 embeddings (if available)
+  5. Combines into versioned feature table
+  6. Registers all outputs in the catalogue
+- New CLI flags: `--taxonomy-db`, `--embeddings`, `--skip-enrichment`, `--skip-features`
+- Graceful degradation: skip enrichment if no taxonomy, skip embeddings if not available, always compute k-mers and alignment features
+
+**Files**:
+- Update `src/distributed_alignment/cli.py`
+- Update `tests/test_integration.py`
+
+**Tests**:
+- Full pipeline with taxonomy + k-mers + embeddings → complete feature table
+- Pipeline without taxonomy → features computed from merged results (no enrichment)
+- Pipeline without embeddings → feature table with k-mers but no embeddings
+- Catalogue has entries with correct lineage
+- Integration test with diverse_reference fixtures: produces taxonomically diverse features

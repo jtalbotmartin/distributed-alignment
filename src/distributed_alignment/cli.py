@@ -133,6 +133,38 @@ def run(
         str | None,
         typer.Option(help="Execution backend: local or ray"),
     ] = None,
+    taxonomy_db: Annotated[
+        Path | None,
+        typer.Option(help="NCBI taxonomy DuckDB file; enables enrichment"),
+    ] = None,
+    embeddings: Annotated[
+        Path | None,
+        typer.Option(help="Pre-computed ESM-2 embeddings Parquet"),
+    ] = None,
+    skip_enrichment: Annotated[
+        bool,
+        typer.Option(help="Skip the taxonomy enrichment stage"),
+    ] = False,
+    skip_features: Annotated[
+        bool,
+        typer.Option(help="Skip feature extraction; stop after merge/enrich"),
+    ] = False,
+    feature_version: Annotated[
+        str,
+        typer.Option(help="Feature schema version"),
+    ] = "v1",
+    run_id: Annotated[
+        str | None,
+        typer.Option(help="Override auto-generated run_id"),
+    ] = None,
+    git_commit: Annotated[
+        str | None,
+        typer.Option(help="Git SHA to record with the run"),
+    ] = None,
+    force_rerun: Annotated[
+        bool,
+        typer.Option(help="Overwrite existing completed run with same ID"),
+    ] = False,
 ) -> None:
     """Run the alignment pipeline."""
     from distributed_alignment.config import load_config
@@ -174,8 +206,8 @@ def run(
     q_manifest = ChunkManifest(**json.loads(q_manifest_path.read_text()))
     r_manifest = ChunkManifest(**json.loads(r_manifest_path.read_text()))
 
-    run_id = q_manifest.run_id
-    configure_logging(level=cfg.log_level, run_id=run_id, json_output=False)
+    effective_run_id = run_id or q_manifest.run_id
+    configure_logging(level=cfg.log_level, run_id=effective_run_id, json_output=False)
 
     # Check DIAMOND is available
     diamond = DiamondWrapper(binary=cfg.diamond_binary, threads=1)
@@ -217,7 +249,7 @@ def run(
         "reaper_interval": cfg.reaper_interval,
         "metrics_port": cfg.metrics_port,
         "log_level": cfg.log_level,
-        "run_id": run_id,
+        "run_id": effective_run_id,
     }
 
     if effective_backend == "ray":
@@ -249,13 +281,12 @@ def run(
             expected_ref_chunks=ref_chunk_ids,
         )
 
-    # Summary
     stack_status = stack.status()
     typer.echo("")
-    typer.echo(f"Pipeline complete (run_id: {run_id})")
+    typer.echo(f"Alignment+merge complete (run_id: {effective_run_id})")
     typer.echo(f"  Completed: {stack_status.get('COMPLETED', 0)}/{total_packages}")
     typer.echo(f"  Failed:    {stack_status.get('POISONED', 0)}")
-    typer.echo(f"  Results:   {merged_dir}")
+    typer.echo(f"  Merged:    {merged_dir}")
 
     if stack_status.get("POISONED", 0) > 0:
         typer.echo(
@@ -263,6 +294,47 @@ def run(
             err=True,
         )
         raise typer.Exit(code=1)
+
+    # Phase 3: feature pipeline
+    from distributed_alignment.pipeline import (
+        RunCollisionError,
+        run_feature_pipeline,
+    )
+
+    typer.echo("")
+    typer.echo("Running feature pipeline...")
+    try:
+        result = run_feature_pipeline(
+            run_id=effective_run_id,
+            merged_parquet_path=merged_dir,
+            chunks_dir=chunks_dir,
+            features_dir=cfg.features_dir.resolve(),
+            catalogue_path=cfg.catalogue_path.resolve(),
+            taxonomy_db_path=taxonomy_db or cfg.taxonomy_db_path,
+            embeddings_path=embeddings or cfg.embeddings_path,
+            skip_enrichment=skip_enrichment,
+            skip_features=skip_features,
+            feature_version=feature_version,
+            git_commit=git_commit,
+            config={
+                "taxonomy_db": str(taxonomy_db) if taxonomy_db else None,
+                "embeddings": str(embeddings) if embeddings else None,
+                "skip_enrichment": skip_enrichment,
+                "skip_features": skip_features,
+                "feature_version": feature_version,
+            },
+            force_rerun=force_rerun,
+        )
+    except RunCollisionError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo("")
+    typer.echo("Feature pipeline complete.")
+    typer.echo(f"  Stages:   {result.metrics['stages_completed']}")
+    typer.echo(f"  Skipped:  {result.metrics['stages_skipped']}")
+    for name, path in result.outputs.items():
+        typer.echo(f"  {name}: {path}")
 
 
 def _run_single_worker(
