@@ -73,11 +73,13 @@ class DistributedAlignmentConfig(BaseSettings):
     # Reaper
     reaper_interval: int = 60
 
-    # Paths
+    # Paths — all defaults nest under ./work/ so a `run` invocation
+    # doesn't leak artifacts into the repo root.  Override any of them
+    # via TOML/env/CLI to move outputs elsewhere.
     work_dir: Path = Path("./work")
-    results_dir: Path = Path("./results")
-    features_dir: Path = Path("./features")
-    catalogue_path: Path = Path("./catalogue.duckdb")
+    results_dir: Path = Path("./work/results")
+    features_dir: Path = Path("./work/features")
+    catalogue_path: Path = Path("./work/catalogue.duckdb")
     taxonomy_db_path: Path | None = None
     embeddings_path: Path | None = None
 

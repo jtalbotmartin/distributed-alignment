@@ -303,13 +303,29 @@ def run(
 
     typer.echo("")
     typer.echo("Running feature pipeline...")
+    # features_dir and catalogue_path follow --work-dir unless the user
+    # has explicitly overridden them in the TOML/env.  This keeps all
+    # pipeline outputs under one root so `--work-dir /tmp/run` "just
+    # works" from anywhere.
+    default_features = Path("./work/features").resolve()
+    default_catalogue = Path("./work/catalogue.duckdb").resolve()
+    effective_features_dir = (
+        cfg.features_dir.resolve()
+        if cfg.features_dir.resolve() != default_features
+        else work_path / "features"
+    )
+    effective_catalogue_path = (
+        cfg.catalogue_path.resolve()
+        if cfg.catalogue_path.resolve() != default_catalogue
+        else work_path / "catalogue.duckdb"
+    )
     try:
         result = run_feature_pipeline(
             run_id=effective_run_id,
             merged_parquet_path=merged_dir,
             chunks_dir=chunks_dir,
-            features_dir=cfg.features_dir.resolve(),
-            catalogue_path=cfg.catalogue_path.resolve(),
+            features_dir=effective_features_dir,
+            catalogue_path=effective_catalogue_path,
             taxonomy_db_path=taxonomy_db or cfg.taxonomy_db_path,
             embeddings_path=embeddings or cfg.embeddings_path,
             skip_enrichment=skip_enrichment,

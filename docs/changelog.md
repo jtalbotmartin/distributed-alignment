@@ -989,3 +989,36 @@ Files created/modified:
 - `PipelineResult` as a dataclass return type gives callers typed access to output paths and metrics without re-reading the catalogue. The CLI uses it for the summary echo; the tests use it for assertions.
 
 **Status**: Complete
+
+---
+
+### Task 3.8 (part 1 of 3): Tier 1 pipeline run + fixture commit — 2026-04-19
+
+**What was done**: Fixed the default-path leakage that was polluting the repo root, cleaned up leaked artifacts, ran the full pipeline end-to-end on Tier 1 fixtures via Docker, and committed the outputs as fixtures for the 3.8 notebook to consume.
+
+Files modified/created:
+- `src/distributed_alignment/config.py` — changed `results_dir`, `features_dir`, `catalogue_path` defaults to nest under `./work/` (gitignored).  Prevents test runs that use the default CLI config from writing to the repo root.
+- `src/distributed_alignment/cli.py` — when `features_dir` / `catalogue_path` are at their default values, the `run` command now derives them from `--work-dir`. Means `--work-dir /tmp/foo` correctly routes all outputs under `/tmp/foo` without needing separate overrides for the features and catalogue paths.
+- `tests/fixtures/taxonomy/accession2taxid.tsv` — regenerated from scratch by parsing the `OX=` field of every entry in `diverse_reference.fasta`, `pathogen_reference.fasta`, `swissprot_reference.fasta`, `swissprot_queries.fasta`, and `ground_truth.json`. Now 3,620 accessions covering 24 taxa (was 38 accessions covering 17 taxa).
+- `tests/fixtures/tier1_outputs/` (new, 5.0 MB) — committed outputs from the Tier 1 end-to-end run: `combined_features.parquet`, `alignment_features.parquet`, `kmer_features.parquet`, `enriched.parquet`, `catalogue.duckdb`.
+- `scripts/regenerate_accession_map.py` (new) — committed regeneration logic for `tests/fixtures/taxonomy/accession2taxid.tsv`. The fixture is now coupled to the reference FASTA contents (parsed from the `OX=` field of each Swiss-Prot header); anyone adding a new reference FASTA needs to run this script to refresh the map, or the pipeline will silently enrich against a stale accession set and most downstream features will be `unknown`. The script has a self-contained `SOURCE_FASTAS` list at the top so "which FASTAs contribute" is literally the first thing you see.
+- `Makefile` — added `run-tier1`, `docker-build-prod`, `update-tier1-fixtures`, `clean-tier1`, `regenerate-accession-map` targets. Fixed the `help` target's regex which was silently filtering out target names containing digits (run-tier1 didn't appear in `make help`).
+- `docs/task-tracker.md` — added "Deferred follow-ups" section noting the clinical-pathway Tier 2 extension as a post-3.8 task.
+
+**Decisions made**:
+- **Default-path fix was Option A** (nest defaults under `./work/`) rather than Option B (update tests to override paths). Option A solves leakage once without touching any test code, and it composes cleanly with the CLI's `--work-dir` flag: set one flag, everything follows.
+- **Regenerated `accession2taxid.tsv` from the FASTA headers** rather than maintaining the hand-curated list of 38 test-anchor accessions. The Swiss-Prot `OX=` field is the canonical taxon ID for every entry — this is exactly what NCBI's `prot.accession2taxid.gz` stores at scale. The hand-curated fixture was a minimal "enough for unit tests" stub that broke down the moment the pipeline ran against the real reference: 833 of 843 unique hit subjects (98.8%) were unmapped. Regenerating from FASTA is how the real NCBI mapping is built anyway.
+- **Tier 1 outputs live under `tests/fixtures/tier1_outputs/`** rather than a separate `data/fixtures/` directory.  This matches the `query_embeddings.parquet` precedent from Task 3.4 — committed pre-computed pipeline artifacts sit alongside the raw-data fixtures that produced them. The notebook can load both with the same `FIXTURES = tests/fixtures/` path prefix.
+- **Used `--force-rerun` inside the Makefile target** and documented why in a comment: the `--force-rerun` guard is a UX safety rail against accidental CLI overwrites, not a defence against reproducibility automation. Makefile targets are meant to be idempotent re-runs; the guard doesn't apply.
+
+**Problems encountered**:
+- **Silent pipeline bug caught by the sanity-check step**: first Tier 1 run completed "successfully" with 98.8% of hits unmapped because the 38-accession test fixture had no overlap with the 2,650-protein reference. This is exactly the kind of silent failure the prompt's sanity-check step was meant to catch — it ran, no exceptions, but the downstream features would be uniformly `unknown` / null. Regenerating the accession2taxid from the FASTA's own `OX=` headers was the fix; after, 0 accessions are unmapped and 387/500 queries have populated `num_phyla`.
+- **Docker container couldn't write to `/app/work/features`**: the Docker WORKDIR is `/app` and the non-root user can't write there. The fix was in the CLI (see above) to derive `features_dir` from `--work-dir` when the config is at its default.
+- **`run-tier1`, `update-tier1-fixtures`, `clean-tier1` targets missing from `make help`**: the regex in the help target was `^[a-zA-Z_-]+:`, which doesn't match digits. Target names like `run-tier1` were silently invisible. Added `0-9` to the character class.
+
+**Learnings**:
+- **Sanity-checking the output before committing is load-bearing**. The prompt's recommendation ("investigate before forcing completion if anything's suspicious") paid off immediately — I would have committed useless fixtures otherwise. The cost was 10 minutes of `count` queries; the saving was hours of "why does the notebook show flat entropy everywhere."
+- **Default paths that are relative to cwd are a latent test-leakage landmine**. The pipeline "worked" in every environment we tested but silently polluted the repo root every time `make test` ran. Nesting defaults under `work_dir` (already gitignored) flips the default from "pollute the repo" to "pollute a gitignored dir" — the failure mode is invisible instead of confusing.
+- **The 500 × 2,650 run took <1 second of DIAMOND work** (fixtures are very small, single query chunk, single ref chunk) and produced biologically interpretable output: 11 phyla, 3 kingdoms, 22.6% dark matter, `num_phyla` per query ranging from 0 to 9. Enough signal diversity to drive a notebook narrative.
+
+**Status**: Complete (part 1 of 3 for Task 3.8)

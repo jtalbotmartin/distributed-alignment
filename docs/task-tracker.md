@@ -738,3 +738,7 @@ Download scripts and fixtures for the tiered dataset strategy. See the separate 
 - Pipeline without embeddings → feature table with k-mers but no embeddings
 - Catalogue has entries with correct lineage
 - Integration test with diverse_reference fixtures: produces taxonomically diverse features
+
+## Deferred follow-ups (post-Phase 3)
+
+- **Clinical-pathway Tier 2 extension**: add a gut-metagenome / pathogen-surveillance section to the 3.8 notebook using `data/clinical/gut_metagenome.fasta` from `scripts/download_metagenome.py`. This would need a separate Tier-2 run against Swiss-Prot (or a pathogen-focused reference), its own fixture commit, and narrative that distinguishes environmental discovery ("soil dark matter") from clinical detection ("is *C. difficile* present?"). Not scoped into 3.8 proper.
